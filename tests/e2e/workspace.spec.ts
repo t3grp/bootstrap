@@ -151,6 +151,13 @@ test("owner creates a real workspace, writes blocks, maintains a table, and conf
   await page
     .getByRole("button", { name: "Add a nested page", exact: true })
     .click();
+  await expect(page).not.toHaveURL(pageUrl);
+  await expect(page.getByLabel("Page title", { exact: true })).toHaveValue(
+    "Untitled",
+  );
+  const childUrl = new URL(page.url());
+  const childId = childUrl.pathname.split("/").at(-1);
+  const childWorkspaceId = childUrl.pathname.split("/")[2];
   await page.getByLabel("Page title", { exact: true }).fill("Interview notes");
   await editor.fill(
     "Capture the words customers use, with a source for every claim.",
@@ -158,6 +165,23 @@ test("owner creates a real workspace, writes blocks, maintains a table, and conf
   await expect(
     page.getByText("All changes saved", { exact: true }),
   ).toBeVisible();
+  await page.reload();
+  await expect(page.getByLabel("Page title", { exact: true })).toHaveValue(
+    "Interview notes",
+  );
+  await expect(editor).toContainText(
+    "Capture the words customers use, with a source for every claim.",
+  );
+  const childSnapshot = await (
+    await page.request.get(
+      `/api/workspace?workspaceId=${encodeURIComponent(childWorkspaceId)}`,
+    )
+  ).json();
+  expect(childSnapshot.pages.find((item: { id: string }) => item.id === childId))
+    .toMatchObject({
+      title: "Interview notes",
+      parentId: new URL(pageUrl).pathname.split("/").at(-1),
+    });
   await sidebar(page)
     .getByRole("button", { name: "Tables", exact: true })
     .click();
