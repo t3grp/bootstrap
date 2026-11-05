@@ -226,7 +226,7 @@ test("owner creates a real workspace, writes blocks, maintains a table, and conf
   });
 
   await sidebar(page)
-    .getByRole("button", { name: "Your team", exact: true })
+    .getByRole("button", { name: "Team", exact: true })
     .click();
   await page
     .getByRole("button", { name: "Create an agent", exact: true })
