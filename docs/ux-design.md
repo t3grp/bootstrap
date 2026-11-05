@@ -64,7 +64,7 @@ The first release supports formatted text, research tables, and structured draft
 
 Show the actual account name/email or provider identifier, service, connection owner, state, grants, last check, and agents using it. Two accounts for the same service receive distinct labels. Reconnection must not silently attach another identity to an existing task.
 
-A connection is usable only after server verification. Cancellation or failure during OAuth shows a recoverable state. Disconnect lists affected routines and agents, removes future access, and invalidates affected queued work. Historical records retain appropriate redacted evidence.
+A connection is usable only after server verification. Cancellation or failure during OAuth shows a recoverable state. Disconnect lists affected routines and agents, removes future access, and invalidates affected queued work. Historical records retain appropriate redacted evidence. Display provider token revocation separately from local disconnection, including pending, failed, or unsupported revocation.
 
 ### Action review
 

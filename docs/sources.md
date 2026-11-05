@@ -24,6 +24,8 @@ No UI code or assets are copied by this documentation change. Source inspection 
 | [Tool Router Sessions](https://docs.composio.dev/kb/guide/mcp-tool-router-sessions) | Account pinning, toolkit allowlists, session/account lifecycle distinction |
 | [Create session API v3.1](https://docs.composio.dev/reference/api-reference/tool-router/postToolRouterSession) | Current session configuration controls and execution surfaces |
 | [Receiving events](https://docs.composio.dev/docs/setting-up-triggers/subscribing-to-events) | Signed webhook handling and production ingress |
+| [Sessions and direct execution](https://docs.composio.dev/docs/sessions-vs-direct-execution) | Fixed-tool sessions and session approvals, including underlying multi-execute actions |
+| [Deleting connected accounts](https://docs.composio.dev/reference/api-reference/connected-accounts/deleteConnectedAccountsByNanoid) | Local disconnection versus optional asynchronous provider revocation |
 
 The design deliberately adds Bootstrap-owned authorization, resource constraints, approvals, idempotency records, and recovery. Composio integration availability does not establish that every action is tested or that its effects are safe to retry. Capability slugs and schema versions must be resolved and pinned during implementation.
 

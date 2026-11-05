@@ -44,11 +44,11 @@ Do not expose a fake connection, approval, voice input, or run-completion contro
 | AC-02 | Two workspaces use overlapping object IDs/resources | API, file, SSE, retrieval, and approval requests cannot cross the boundary | B0–B4; FR-01, FR-06 |
 | AC-03 | Refresh/disconnect during a run | Event cursor resumes; no resubmitted message, task, or operation | B1; FR-03, FR-09 |
 | AC-04 | Worker crash between model steps | Persisted checkpoint resumes; completed output remains available | B1; FR-09 |
-| AC-05 | Two accounts for the same service | Explicit chosen identity is used; disconnect does not trigger account fallback | B2; FR-05 |
+| AC-05 | Two accounts for the same service | After authorizing A, connecting newer B/C does not redirect work; disabling A blocks it without fallback | B2; FR-05 |
 | AC-06 | Edit reviewed action/account/attachment | Old approval is superseded and cannot authorize the changed payload | B2; FR-07 |
 | AC-07 | Approve twice from two tabs | One atomic decision and one logical external operation | B2; FR-07, FR-09 |
 | AC-08 | Provider commits a write then times out | Unknown-outcome state, no blind second write, usable reconciliation path | B2; FR-09 |
-| AC-09 | Permission revoked after approval | Dispatch and resumed work are blocked despite the earlier approval | B2; FR-05–07 |
+| AC-09 | Permission revoked after approval | Dispatch and resumed work are blocked despite the earlier approval; local disconnection is distinct from observed provider revocation | B2; FR-05–07 |
 | AC-10 | Malicious source asks for more access or another recipient | Source text cannot change grants or authorized payload | B3; FR-06, FR-10 |
 | AC-11 | Specialist tries to delegate or exceed parent grants | Rejected at server; bounded work and explicit blocked reason | B3; FR-08 |
 | AC-12 | Cancel root while children run | No further queued child dispatch; in-flight/completed effects remain honestly recorded | B3; FR-08–09 |
@@ -71,7 +71,7 @@ Where a provider cannot prove an uncertain outcome, acceptance requires honest u
 
 ## 5. Testing and evaluation
 
-Use unit tests for state transitions, scope matching, budget arithmetic, payload hashes, and policy decisions. Integration tests use real PostgreSQL and workers to exercise concurrency, restart, cancellation, and transaction boundaries. Fault injection must cover a crash before dispatch, after remote effect, and before receipt persistence.
+Use unit tests for state transitions, scope matching, budget arithmetic, payload hashes, and policy decisions. Integration tests use real PostgreSQL and workers to exercise concurrency, restart, cancellation, and transaction boundaries. Fault injection must cover a crash before dispatch, after remote effect, and before receipt persistence. If lifecycle or trigger webhooks are enabled, reject invalid signatures and stale/replayed payloads, prove duplicate valid delivery schedules one logical event, and validate tenant binding before ingestion.
 
 Browser tests cover the real product actions, including reload, two-tab approval, reconnect, mobile layouts, and keyboard navigation. Screenshot comparisons check the adapted UI; they do not replace interaction tests. Test accounts must be isolated from customer production services. Store redacted traces and provider receipts with commit and configuration identifiers.
 

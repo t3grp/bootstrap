@@ -72,7 +72,7 @@ Use opaque IDs. Tenant-owned tables include `workspace_id`, timestamps, and appr
 | Workspace / Membership | Owner, name, timezone, locale, settings; one active owner membership in initial UI |
 | BusinessProfileVersion | Workspace, version, content, approved facts, author, source references |
 | Agent / AgentVersion | Role, instructions, output contract, model profile, immutable configuration version |
-| Connection | Workspace, member, Composio principal, toolkit, connected-account ID, actual account identity, auth-config ID, status |
+| Connection | Workspace, member, Composio principal, toolkit, connected-account ID, actual account identity, auth-config ID, local status, provider revocation status |
 | CapabilityGrant | Agent, connection, capability, resources, constraints, expiry, policy version, revocation |
 | Goal / Task | Objective, criteria, owner agent, state, due date, goal, dependency IDs, latest accepted output |
 | Conversation / Message | Workspace, thread, role, content parts, task links, message idempotency key |
@@ -139,13 +139,15 @@ Tool Router documentation states that account selection is live when no account 
 
 For public multi-account deployment, enable Composio's callback identity verification and redeem the returned session through the authenticated server using the expected principal. This is separate from merely checking an account ID on redirect and prevents a connection link completed by the wrong browser identity from becoming usable. Confirm the selected SDK's current flow during implementation; [connected-account documentation](https://docs.composio.dev/reference/api-reference/connected-accounts) describes the capability.
 
-Reconnect creates or verifies a connection binding; it cannot silently retarget a queued action to another account. Disconnect revokes local grants immediately, invalidates affected pending actions/sessions, disables relevant routines, and uses the provider/Composio revocation operation when supported. Keep historical receipts with access controls and retention rules.
+Reconnect creates or verifies a connection binding; it cannot silently retarget a queued action to another account. Disconnect revokes local grants immediately, invalidates affected pending actions/sessions, disables relevant routines, and uses the provider/Composio revocation operation when supported. Keep historical receipts with access controls and retention rules. Track provider revocation separately as pending, succeeded, failed, or unsupported. Local disconnection blocks execution immediately; it does not establish completed upstream token revocation. Observe the provider/Composio revocation result before reporting completion, and reconcile already-dispatched actions.
 
 ### Tool gateway
 
 Expose typed Bootstrap capabilities, backed by a reviewed manifest. Manifest fields include capability ID, provider tool slug/version, input schema, effect class, required OAuth scopes, resource constraints, approval behavior, timeout, safe retry policy, output redaction, receipt extraction, and verification strategy.
 
-Do not expose a general execute-tool, authenticated proxy, remote shell, or batch-execution capability to the model in v0.1. Discovery can identify candidates, but does not grant execution. If a future Tool Router interface is used, inspect and authorize every underlying action, including nested batches. Top-level approval of an opaque execution wrapper is insufficient.
+Prefer a scoped Composio session with a fixed tool set inside the adapter. The model sees Bootstrap's typed capabilities, and the worker dispatches each invocation through the application gateway. Do not expose a general execute-tool, authenticated proxy, remote shell, or batch-execution capability to the model in v0.1. Discovery can identify candidates, but does not grant execution. If dynamic Tool Router meta-tools are introduced later, inspect and authorize every underlying action, including nested batches. Top-level approval of an opaque execution wrapper is insufficient.
+
+Composio documents session approvals that also cover actions inside multi-execute. They can supply an additional safeguard. Bootstrap's gateway remains authoritative because any direct or alternate execution path must obey the same resource permissions, durable authorization, account selection, budget reservations, and action ledger. Evaluate native approvals during the integration spike; if used, persist their continuation state and exact inputs rather than starting a fresh execution to simulate resume.
 
 Permission is the intersection of workspace policy, current agent grants, the assignment's authority, connection ownership, allowed resources, and action approval. Tool descriptions and remote document instructions cannot widen it. Unknown tools or malformed inputs are rejected.
 
@@ -168,7 +170,7 @@ Composio-managed built-in paid capabilities, instant access, model-driven connec
 
 ### Events and routines
 
-Scheduled routines use the application scheduler in v0.1. Broad event-triggered automations are deferred. Any connection-lifecycle or future trigger webhook uses the official signature verification path with the raw request, a signing secret, and replay/timestamp checks. A parser without signature verification is insufficient.
+Scheduled routines use the application scheduler in v0.1. Broad event-triggered automations are deferred. Any connection-lifecycle or future trigger webhook uses the official signature verification path with the raw request, a signing secret, and replay/timestamp checks. A parser without signature verification is insufficient. Preserve the raw body and the official webhook ID, timestamp, and signature headers for verification; do not parse and reserialize JSON first.
 
 Persist a verified event and its deduplication key before acknowledging it; execute asynchronously. Match principal, connection, subscription, and workspace server-side. Treat event payloads as untrusted business input. Prevent feedback loops when Bootstrap's own write generates another event.
 
