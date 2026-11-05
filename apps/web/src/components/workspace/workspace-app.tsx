@@ -592,6 +592,7 @@ export function WorkspaceApp({
             <button
               type="button"
               className={`context-toggle ${contextOpen ? "is-active" : ""}`}
+              aria-label="Your team"
               aria-expanded={contextOpen}
               onClick={() => setContextOpen((value) => !value)}
             >

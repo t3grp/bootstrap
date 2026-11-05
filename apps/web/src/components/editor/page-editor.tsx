@@ -47,6 +47,7 @@ import {
 } from "lucide-react";
 import { WorkspaceReferences } from "./reference-nodes";
 import { createPageEditorExtensions, isSafePageLink } from "./extensions";
+import { syncPageContent } from "./content-sync";
 import {
   performBlockAction,
   selectedTopLevelBlock,
@@ -195,7 +196,6 @@ export function PageEditor(props: PageEditorProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const insertSearchRef = useRef<HTMLInputElement>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
-  const lastEmitted = useRef(JSON.stringify(content));
   const [menu, setMenu] = useState<InsertMenu | null>(null);
   const menuRef = useRef(menu);
   menuRef.current = menu;
@@ -236,7 +236,6 @@ export function PageEditor(props: PageEditorProps) {
     },
     onUpdate: ({ editor: current }) => {
       const next = current.getJSON() as PageContent;
-      lastEmitted.current = JSON.stringify(next);
       latestProps.current.onChange(next);
       syncSlashRef.current(current);
     },
@@ -246,14 +245,7 @@ export function PageEditor(props: PageEditorProps) {
 
   useEffect(() => {
     if (!editor) return;
-    const incoming = JSON.stringify(content);
-    if (
-      incoming === lastEmitted.current ||
-      incoming === JSON.stringify(editor.getJSON())
-    )
-      return;
-    editor.commands.setContent(content as JSONContent, { emitUpdate: false });
-    lastEmitted.current = incoming;
+    syncPageContent(editor, content);
   }, [content, editor]);
 
   useEffect(() => {

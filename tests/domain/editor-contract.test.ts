@@ -5,6 +5,7 @@ import type { EditorNode, PageContent } from "@bootstrap/core";
 import { EditorState, TextSelection } from "../../apps/web/node_modules/@tiptap/pm/dist/state/index.js";
 import { createPageEditorSchema } from "@/components/editor/extensions";
 import { performBlockAction } from "@/components/editor/block-actions";
+import { syncPageContent } from "@/components/editor/content-sync";
 import { validatePageContent } from "@/lib/server/validation";
 import { parseCellValue } from "@/components/tables/table-utils";
 
@@ -18,12 +19,49 @@ function headlessState(content: PageContent, position: number) {
   doc.check();
   let state = EditorState.create({ schema, doc, selection: TextSelection.create(doc, position) });
   const focus = vi.fn();
+  const setContent = vi.fn((next: PageContent) => {
+    state = EditorState.create({ schema, doc: schema.nodeFromJSON(next) });
+    return true;
+  });
   const editor = {
     get state() { return state; }, schema,
+    commands: { setContent },
     view: { dispatch: (transaction: Parameters<typeof state.apply>[0]) => { state = state.apply(transaction); }, focus },
   } as unknown as Parameters<typeof performBlockAction>[0];
-  return { editor, getState: () => state, focus };
+  return { editor, getState: () => state, focus, setContent };
 }
+
+describe("page acknowledgement synchronization", () => {
+  it("retains the checklist selection when JSONB reorders object keys", () => {
+    const lead = paragraph("Opening paragraph");
+    const list = schema.nodes.taskList.create(attrs(), schema.nodes.taskItem.create({ ...attrs(), checked: false }, paragraph("Keep the caret here")));
+    const doc = schema.nodes.doc.create(null, [lead, list, schema.nodes.paragraph.create(attrs())]);
+    const content = doc.toJSON() as PageContent;
+    const state = headlessState(content, lead.nodeSize + 3);
+    const before = state.getState();
+    // Reproduce JSONB's canonical key order from the failing browser trace:
+    // emitted {type,text} comes back as {text,type}, with equal document content.
+    const saved = JSON.parse(JSON.stringify(content, (_key, value) => {
+      if (!value || typeof value !== "object" || Array.isArray(value)) return value;
+      return Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.length - right.length || left.localeCompare(right)));
+    })) as PageContent;
+    expect(saved).toEqual(content);
+    expect(JSON.stringify(saved)).not.toBe(JSON.stringify(content));
+    expect(syncPageContent(state.editor, saved)).toBe(false);
+    expect(state.setContent).not.toHaveBeenCalled();
+    expect(state.getState()).toBe(before);
+    expect(state.getState().selection.$from.node(1).type.name).toBe("taskList");
+  });
+
+  it("still applies a genuinely different revision without emitting another save", () => {
+    const doc = schema.nodes.doc.create(null, paragraph("The current draft"));
+    const state = headlessState(doc.toJSON() as PageContent, 5);
+    const latest = schema.nodes.doc.create(null, paragraph("The explicitly loaded revision")).toJSON() as PageContent;
+    expect(syncPageContent(state.editor, latest)).toBe(true);
+    expect(state.setContent).toHaveBeenCalledWith(latest, { emitUpdate: false });
+    expect(state.getState().doc.textContent).toBe("The explicitly loaded revision");
+  });
+});
 
 describe("editor schema and server content contract", () => {
   it("accepts the installed schema's numbered-list and link defaults", () => {

@@ -29,9 +29,10 @@ the target; this document describes what the code actually does.
   isolation, private file scope, durable disk reopen, stale and simultaneous page
   saves, parent-cycle races, subtree restoration, unavailable references, typed
   table rollback, stable resource references, unsafe editor data, and export safety.
-- 24 additional tests passed against the installed editor schema and real
+- 26 additional tests passed against the installed editor schema and real
   ProseMirror transactions: valid block defaults, invalid structures, stable IDs,
-  block movement/duplication/deletion, and typed cell parsing.
+  block movement/duplication/deletion, selection preservation across JSONB save
+  acknowledgements, explicit revision replacement, and typed cell parsing.
 - The live HTTP end-to-end scenario passed against the production standalone
   bundle: setup/sign-in, scoped resource writes, stale revisions, same-origin
   checks, private upload/download, export, and closed registration.
@@ -39,8 +40,10 @@ the target; this document describes what the code actually does.
   mobile layout, keyboard blocks/stable IDs, and typed/linked-table behavior.
 - Local browser execution is blocked before page navigation: the environment
   denies Chromium's process singleton socket. The Playwright browser download also
-  returned an invalid archive. The four UI cases are not successful UI checks;
-  CI must run them before browser acceptance.
+  returned an invalid archive. Browser acceptance is run in GitHub Actions against
+  the production bundle. The [implementation PR checks](https://github.com/t3grp/bootstrap/pull/2/checks)
+  record the current result; a completed successful check is required before
+  treating the five end-to-end scenarios as verified.
 
 ## Remaining milestone work
 

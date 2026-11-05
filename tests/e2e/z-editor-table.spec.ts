@@ -116,6 +116,10 @@ test("keyboard blocks keep stable IDs when moved, duplicated, and reloaded", asy
   await expect(
     page.getByText("All changes saved", { exact: true }),
   ).toBeVisible();
+  // A JSONB save acknowledgement must preserve the caret inside the checklist.
+  await expect(
+    page.getByRole("combobox", { name: "Block type", exact: true }),
+  ).toHaveValue("taskList");
   const before = await readPage();
   const originalIds = structuralIds(before.content);
   expect(originalIds.length).toBeGreaterThanOrEqual(7);
