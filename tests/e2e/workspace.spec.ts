@@ -121,7 +121,10 @@ test("owner creates a real workspace, writes blocks, maintains a table, and conf
   await editor.press("ControlOrMeta+End");
   await editor.press("Enter");
   await editor.pressSequentially("/heading 2");
-  await page.getByRole("option", { name: /^Heading 2/ }).click();
+  await page
+    .getByRole("listbox", { name: "Insert a block", exact: true })
+    .getByRole("option", { name: /^Heading 2/ })
+    .click();
   await editor.pressSequentially("What we are learning");
   await expect(
     page.getByRole("heading", { name: "What we are learning" }),
