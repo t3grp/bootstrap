@@ -41,11 +41,11 @@ Date: 6 November 2026. Version: 0.3 draft. The product direction below follows t
 | Payment/runtime boundary | Stripe for payment state; Bootstrap ledger and managed gateway for real-time reservations | Duplicate events and concurrent runs cannot mint or spend twice |
 | Model/integration credentials | Managed gateways hold platform keys; self-host uses direct operator credentials | User instances never receive platform-wide secrets |
 | Self-hosting | Complete core, BYOK, Composio configuration, local/S3 storage, demo mode | No hosted subscription or private infrastructure needed to run the public application |
-| New-code license | Apache-2.0 proposal, retaining component notices | Owner adoption remains pending; no LICENSE is installed by this documentation change |
+| New-code license | Apache-2.0 included in the first implementation PR, retaining component notices | Review with the implementation before adopting the release |
 
 ## Decisions to settle at their implementation gate
 
-**Foundation:** select the project license and record per-file provenance for the chosen UI subset. Openbot's inspected upstream is noncommercial-licensed; its patterns inform an independently authored design, with no upstream source copied. t3UI's root license does not override upstream or media licenses. The specification can be reviewed without adopting a license yet.
+**Foundation:** the first implementation includes the proposed Apache-2.0 license, an independently authored AffectUI-inspired shell, and a BeUI-derived table selection hook with its full MIT notice. See `THIRD_PARTY_NOTICES.md`. Openbot's inspected upstream is noncommercial-licensed; no upstream source is copied. t3UI's root license does not override upstream or media licenses. License adoption remains part of reviewing the implementation PR.
 
 **Connected actions:** select development Composio configuration, isolated accounts, and approved test actions. Discover and pin actual tool slugs and schemas. Validate callback identity, account pinning, revocation, receipts, and atomic update preconditions. Keep unsupported capabilities disabled.
 

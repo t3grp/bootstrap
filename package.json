@@ -1,0 +1,30 @@
+{
+  "name": "bootstrap-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22.16"
+  },
+  "scripts": {
+    "init:local": "node scripts/init-local.mjs",
+    "dev": "pnpm --filter @bootstrap/web dev",
+    "build": "pnpm --filter @bootstrap/web build",
+    "start": "pnpm --filter @bootstrap/web start",
+    "typecheck": "pnpm --filter @bootstrap/web exec next typegen && tsc --noEmit -p apps/web/tsconfig.json",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "format": "prettier --write apps packages scripts tests '*.json' '*.ts' '*.yaml' .github"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@types/node": "26.6.6",
+    "@types/pg": "8.23.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
+  }
+}
