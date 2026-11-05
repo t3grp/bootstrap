@@ -1,6 +1,6 @@
 # Bootstrap implementation plan
 
-Version: 0.2 draft. This plan covers the intended workspace, agent team, self-hosted application, and paid hosted service. It is a sequence of implementation gates, not a claim that any application behavior already exists.
+Version: 0.3 draft. This plan covers the intended workspace, agent team, self-hosted application, and paid hosted service. It is a sequence of implementation gates, not a claim that any application behavior already exists.
 
 ## 1. Delivery strategy
 
@@ -13,14 +13,14 @@ Use deterministic provider and connector adapters early so domain behavior, reco
 | Slice | Work | Completion gate | Depends on |
 | --- | --- | --- | --- |
 | B0 Foundation | Public monorepo, owner authentication, workspace-scoped schema/migrations, web/worker health, Compose, shared contracts, approved UI tokens/notices | Fresh setup opens a real workspace; cross-workspace access fails; build has no private catalogue dependency | Project license and provenance before copying code |
-| B1 Manual workspace | Projects, user/unassigned tasks, Markdown documents/versions, files, bounded typed tables, CSV, Everything/Today, notes and scratchpad | User completes ordinary project work with no agents, model key, or AI balance; resources export | B0 |
+| B1 Manual workspace | Projects, user/unassigned tasks, nested block pages/versions, files, typed tables and linked views, native/Markdown/CSV export, Everything/Today, notes and scratchpad | User completes ordinary project work with no agents, model key, or AI balance; resources export | B0 |
 | B2 One useful agent | Six resource areas, pinned skills, editable memories, explicit grants, contextual chat, task/thread/run, bounded model loop, output receipts, SSE | One specialist uses selected resources and produces a saved workspace result; refresh/restart preserves progress | B1 |
 | B3 Controlled connection | Notion reads and reviewed page creation, account binding, capability gateway, exact approval, action ledger, reconciliation | Intended account is used; stale/double approvals cannot dispatch; an uncertain write is not blindly duplicated | B2 |
 | B4 Agent communication | Durable messages/deliveries, action/notification semantics, child assignments/results, task revisions, shared caps, parent cancellation | A directly selected agent obtains specialist help without a Chief of Staff; no authority or budget widening | B2; integrate B3 action rules |
 | B5 Complete workflows | Gmail/Calendar/GitHub action manifests, launch/client-delivery flows, routine scheduler, occurrence deduplication, source checkpoints, review and usage views | Both primary workflows and supporting meeting/triage cases pass; missed runs and revoked sources behave correctly | B3–B4 |
 | B6 Managed instances | Control-plane owner/account mapping, Stripe hosting subscription, entitlement reconciliation, provisioner adapter, routing, per-user isolation, health, suspend/archive/restore | Verified purchase produces one healthy intended instance; retries reuse resources; cancellation preserves the disclosed recovery path | B1 data/export contract; stable B0 deployment |
 | B7 Managed usage | Model gateway, Composio broker, manual top-ups, rate cards, atomic reservations, settlements, refund/reversal flows, usage UI | Concurrent work cannot exceed credits; duplicate events/receipts cannot grant or charge twice; unknown usage remains reconcilable | B2 runtime request IDs; B6 account/entitlement |
-| B8 Public and hosted beta | Standalone setup, license/notices, contribution docs, release evals, accessibility, export/import, backup/restore, lifecycle operations and commercial settings | Core AC01–AC42 and hosted HC01–HC14 have evidence; operational/pricing decisions are configured before live charging | B0–B7 |
+| B8 Public and hosted beta | Standalone setup, license/notices, contribution docs, release evals, accessibility, export/import, backup/restore, lifecycle operations and commercial settings | Core AC01–AC48 and hosted HC01–HC14 have evidence; operational/pricing decisions are configured before live charging | B0–B7 |
 
 B6 and B7 can proceed in parallel with B4–B5 once their contracts are stable. The paid launch waits for all applicable gates. Publish progress by working slice and known limitations; do not promise a calendar date before team capacity and implementation spikes are known.
 
@@ -30,8 +30,8 @@ The first code change should deliver B0 and the smallest useful B1 path:
 
 1. Scaffold TypeScript/pnpm, web and worker entrypoints, database migrations, local storage, and Docker Compose.
 2. Add owner login/bootstrap and workspace-scoped access helpers.
-3. Adapt the approved AffectUI shell and BeUI table primitives into controlled product components.
-4. Create a project with a manually editable document, a small typed table, a file attachment, and a task assigned to Me.
+3. Adapt the approved AffectUI shell and BeUI table primitives; select and validate a permissively licensed block-editor foundation.
+4. Create a project home page and subpage with editable blocks, a linked customer table, a file reference, and a task assigned to Me.
 5. Add version checks, durable persistence, reload behavior, and a visible empty Team state.
 6. Prove that the flow works without model, Composio, or hosted-control credentials.
 
@@ -85,6 +85,12 @@ The functional requirement identifiers come from [product specification](product
 | AC40 | Source-derived memory survives source revocation | Memory cannot bypass current source access; historical run text is not silently reinjected | B2–B5; FR-10, FR-20 |
 | AC41 | Owner exports and imports a workspace | Canonical resources, tasks, agent settings/skills/memories and references survive; secrets/billing authority do not transfer | B8; FR-13, FR-18–20 |
 | AC42 | No coordinator exists | User opens specialist directly, assigns work, receives result, and retains manual work in the same project | B2–B4; FR-02–04, FR-15 |
+| AC43 | Mixed blocks are edited, reordered, reloaded, and exported | Stable IDs and content survive native export/import; Markdown limitations are explicit; slash and keyboard controls work | B1; FR-16, FR-27 |
+| AC44 | Nested pages move or enter Trash | Stable links survive; cycles/cross-workspace parents fail; descendant behavior is explicit; linked resources remain | B1; FR-28 |
+| AC45 | The same table opens inline and full-page | Canonical row changes are shared, named view settings remain separate, removing an embed preserves its table | B1; FR-17, FR-29 |
+| AC46 | A readable page references an ungranted table or child | Rendering, retrieval, and agent context reveal no unauthorized target content or metadata; filters do not grant access | B1–B2; FR-06, FR-18, FR-29 |
+| AC47 | Agent block proposal races a user edit | Base-version conflict preserves the newer page and exposes an inspectable proposal | B2; FR-21, FR-27 |
+| AC48 | Keyboard/mobile page and agent-pane work | Selection, draft, focus, and scroll survive; Enter edits a page and submits chat under their distinct rules | B1–B2; FR-14, FR-27–28 |
 
 ## 5. Hosted acceptance and evidence
 
@@ -115,4 +121,12 @@ Before public beta, publish setup and upgrade instructions, environment-variable
 
 Before accepting paid subscribers, configure the infrastructure provider/region, resource limits, readiness/recovery objectives, plan and credit prices, rate-card economics, tool-cost treatment, tax/payment settings, and disclosed grace/retention/refund policies. Exercise capacity failure, provisioning retries, entitlement recovery, archive/restore, and account separation. These are concrete launch gates, not reasons to delay the workspace foundation.
 
-The release evidence must cover 42 core scenarios and 14 hosted scenarios. Disabled/deferred features must be clearly labelled, with no production UI offering an unimplemented action. Record remaining measured limitations and operator runbooks rather than describing target behavior as proven.
+The release evidence must cover 48 core scenarios and 14 hosted scenarios. Disabled/deferred features must be clearly labelled, with no production UI offering an unimplemented action. Record remaining measured limitations and operator runbooks rather than describing target behavior as proven.
+
+## 8. Independent landing-page handoff to Muse
+
+Muse can implement the public landing page in parallel with the application foundation. Follow [landing-page specification](landing-page-spec.md) and the ready-to-use [Muse handoff](muse-handoff.md). This is a marketing route with controlled concept fixtures; it does not require working agents, OAuth, payment, or hosting services.
+
+M0 delivers the responsive page, original Bootstrap styling, a page-centered workspace preview, six-property agent demonstration, anchored navigation, real repository/spec links, and explicit development status. The default release mode is concept. Live signup, deployment, pricing, or installation claims require verified destinations and capability readiness before activation.
+
+Complete LP01–LP18 from the landing brief, including desktop/mobile evidence, keyboard and reduced-motion behavior, link checks, page overflow, fixture disclosure, and claim accuracy. Marketing acceptance is separate from application acceptance. Creating the page does not authorize live deployment or communication to Muse; the owner can hand over the provided brief.

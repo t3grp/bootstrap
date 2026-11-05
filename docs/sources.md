@@ -73,3 +73,14 @@ The per-user instance, control-plane gateways, prepaid runtime ledger, grace/ret
 | [Apache License 2.0](https://apache.org/licenses/LICENSE-2.0.html) | Proposed license for new code, including its explicit patent provisions |
 
 Check installed documentation and lock versions before writing SDK-specific implementation. No provider price, free-tier allowance, release date, performance benchmark, or deployment cost is asserted by this specification.
+
+## Page workspace and public landing references
+
+Checked 6 November 2026. The owner clarified that the workspace should feel like Notion and the landing page should feel like Linear, with Muse implementing the landing page from these specifications.
+
+- [Linear public homepage](https://linear.app/): inspected through official page content and the live browser view. Observed dark surfaces, restrained navigation, a large left-aligned headline, generous spacing, fine borders, and detailed product-led compositions. Bootstrap's proposed token values, copy, product fixtures, and section sequence are original choices, not measurements or copied assets from Linear.
+- [Notion writing and editing basics](https://www.notion.com/help/writing-and-editing-basics): content blocks, insertion/action controls, and slash commands inform the interaction model.
+- [Notion subpages](https://www.notion.com/help/create-a-subpage): nested pages, sidebar hierarchy, moves, and breadcrumbs inform workspace navigation.
+- [Notion database introduction](https://www.notion.com/help/intro-to-databases): inline/full-page structured-data presentations inform linked views. Bootstrap's first release deliberately keeps a bounded grid and does not adopt Notion's full database/page model.
+
+The references inform experience and visual direction. No Notion/Linear source, copy, product screenshot, logo, customer list, or brand asset is imported into Bootstrap. The landing page's concept fixtures illustrate intended Bootstrap behavior and are labelled accordingly. See [landing-page specification](landing-page-spec.md) for exact copy, states, links, and acceptance.

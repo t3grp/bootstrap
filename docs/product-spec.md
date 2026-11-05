@@ -1,12 +1,14 @@
 # Bootstrap product specification
 
-Version: 0.2 draft. Date: 6 November 2026. Implementation status: planned.
+Version: 0.3 draft. Date: 6 November 2026. Implementation status: planned.
 
 ## 1. Product purpose
 
 **Bootstrap is a personal business workspace where founders organize projects, documents, tables, files, and work, supported by configurable agents.** The user supplies direction, creates and edits resources, and decides what to delegate. Agents help research, write, maintain information, and perform authorized actions through connected services.
 
 The product promise is: **your workspace, with an agent team that understands your business and helps you get work done.** A founder can use projects, documents, tables, files, notes, and manual tasks without an agent or AI usage balance. Chat and agent activity support that work.
+
+Bootstrap's workspace uses a page-centered interaction model inspired by Notion: nested pages, content blocks, slash commands, and linked table views within the user's work. Agents assist in an optional context panel beside the current page. Everything and Today remain entry points. The public landing page uses a restrained Linear-inspired visual language; [landing-page specification](landing-page-spec.md) and [Muse handoff](muse-handoff.md) define that separate surface.
 
 The initial audience is solo founders, consultants, agencies, SaaS founders, and digital-product operators. Their first outcomes include organizing a launch, preparing customer communication, managing client delivery, and maintaining an operating brief.
 
@@ -19,7 +21,8 @@ The hosted service provides one dedicated application instance per subscribed ow
 | Account and instance | One hosted owner and their provisioned application instance; billing is account-level |
 | Workspace | One business or distinct area of work, with its profile, resources, agents, connections, and limits |
 | Project | Workspace-owned objective grouping tasks, documents, tables, files, conversations, and activity |
-| Document | Editable workspace content, including briefs, notes, procedures, and generated reports |
+| Page / Document | Pages is the user-facing name; Document remains the canonical internal object for structured blocks, notes, briefs, procedures, and reports |
+| Table view | Named grid presentation of one canonical table, with its own filters, sort, and visible columns |
 | File | A canonical uploaded or generated binary resource with metadata, versions, and access |
 | Table | A typed, editable collection of records owned by the workspace |
 | Task | Work assigned to the user, an agent, or nobody yet; includes status and completion criteria |
@@ -40,7 +43,7 @@ A conversation can contain several tasks; each task can have several attempts. S
 The first intended release includes:
 
 - Owner identity, workspaces, business profiles, timezone, and projects.
-- Manual tasks, editable documents and notes, files, bounded tables, and export.
+- Manual tasks, nested block-based pages and notes, files, bounded tables, inline/full-page table views, and native/Markdown/CSV export.
 - Workspace, project, and direct-agent conversations with selected resource context.
 - Custom agents and templates exposing Instructions, Skills, Routines, Memories, Files, and Tables.
 - Versioned skills, editable long-term memories, direct assignments, and bounded agent communication.
@@ -58,13 +61,19 @@ Later releases can add multiple human collaborators, more certified integrations
 
 ### Projects, tasks, and capture
 
-Projects group resources without duplicating them. Tasks support assignee Me/agent/unassigned, status, priority, due date, simple dependencies, and expected output. The user can create, reorder, complete, and reopen tasks manually. Assigning work to an agent is explicit; creating a project does not launch a team.
+Projects group resources without duplicating them. Each can link to a canonical home page; its task and activity views remain available beside that page. Tasks support assignee Me/agent/unassigned, status, priority, due date, simple dependencies, and expected output. The user can create, reorder, complete, and reopen tasks manually. Assigning work to an agent is explicit; creating a project does not launch a team.
 
 Everything and Today views help the user find projects, personal commitments, recent resources, and pending decisions. Notes and a persistent scratchpad capture information quickly. Turning a note into a document or task preserves its content and origin; it does not invoke AI unless requested.
 
-### Documents and files
+### Pages and files
 
-Documents support headings, paragraphs, lists, links, code, and simple formatted content, with autosave, versions, and Markdown export. Users can edit without AI. Agent proposals produce reviewable revisions; a sufficiently specific instruction can authorize an internal edit without repeated confirmation.
+Pages use a structured block editor with direct typing, a searchable slash menu, block insertion, reordering, duplication, deletion, and keyboard alternatives to dragging. The first block set is paragraph, heading, bulleted list, numbered list, checklist, quote, callout, divider, code, file/image reference, child-page reference, linked table view, and task-list reference. Basic inline formatting supports bold, italic, inline code, and safe links. Pages autosave and retain versions. Users edit without AI; agent changes produce inspectable proposals against the current page version, with direct user instructions able to authorize specific internal edits.
+
+The sidebar contains favorites and an expandable page tree. Users create top-level pages/subpages, rename and reorder them, move them within a workspace, and navigate breadcrumbs. IDs and links remain stable after a move; the server rejects hierarchy cycles and cross-workspace parents. Moving or nesting a page never widens agent access.
+
+A checklist is page content. Converting it into an assigned Task is an explicit action. File, page, table, and task blocks reference canonical resources. Removing a reference block removes the reference only. Moving a page to Trash identifies whether descendants are included, permits normal restoration, and preserves unrelated referenced resources.
+
+Native structured export preserves blocks, hierarchy, and references. Markdown is an import/export representation; unsupported structures receive explicit representations or export notes. A rendered page is never reduced to Markdown as its authoritative source. Arbitrary columns/layout builders, synced blocks, arbitrary HTML/iframes, and simultaneous multi-human editing are deferred.
 
 Files support upload, metadata, project association, download, replacement/versioning, and removal. Ingestion state is separate from upload success: queued, processing, ready, unsupported, or failed. A file that cannot be indexed remains downloadable. Agent access follows the canonical resource and current grants, including derived text and retrieval indexes.
 
@@ -74,9 +83,11 @@ Removing a resource revokes future retrieval and follows the documented retentio
 
 The first table editor provides typed columns, stable row/column identifiers, row CRUD, grid view, sorting, filtering, search, selection, and CSV import/export. Initial field types are text, number, date, checkbox, single select, URL, and file reference. Document an initial capacity target and verify it before advertising performance.
 
+A table opens full-page or appears as an inline linked view on any permitted page. Both use the same table and records. Each named view stores filters, sorting, and visible columns; the initial view type is a grid. Row detail opens a property drawer without requiring a block page per record. Filters are presentation, not permissions: resource/row/field grants apply before any view or agent context is returned.
+
 Agents receive schema and scoped access to selected tables and permitted operations. Bulk changes show affected rows and a diff. Authorized routine updates can apply within defined fields and bounds. Every mutation checks resource versions; a stale proposal is rebased or returned for review instead of overwriting newer user edits.
 
-Formula engines, relational databases, cross-table rollups, arbitrary scripts, public forms, and Notion-style page/database behavior are deferred. CSV import validates types and reports rejected rows; it does not silently execute formulas or discard invalid data.
+Formula engines, cross-table relations/rollups, advanced database views, record-as-page polymorphism, arbitrary scripts, and public forms are deferred. CSV import validates types and reports rejected rows; it does not silently execute formulas or discard invalid data.
 
 ## 5. Agents and collaboration
 
@@ -172,7 +183,7 @@ Zero AI balance prevents unfunded model work; it does not disable ordinary manua
 
 ## 10. Functional requirements
 
-Existing FR-01–FR-14 identifiers are retained and refined; FR-15–FR-26 extend the workspace and hosted scope.
+FR-01–FR-26 retain the workspace/agent/hosted contracts; FR-27–FR-29 define the page-centered interaction model.
 
 | ID | Requirement | Acceptance |
 | --- | --- | --- |
@@ -191,8 +202,8 @@ Existing FR-01–FR-14 identifiers are retained and refined; FR-15–FR-26 exten
 | FR-13 | Portability | Self-hosting and resource export work without private repositories or organization-specific services |
 | FR-14 | Accessible interface | Core manual and agent workflows pass keyboard, mobile, and reduced-motion acceptance |
 | FR-15 | Projects and manual work | User organizes projects and self-assigned tasks without invoking AI |
-| FR-16 | Documents and files | Manual editing, versions, uploads, ingestion states, download, and removal follow access rules |
-| FR-17 | Bounded tables | Typed grid CRUD/filter/sort/CSV and scoped agent proposals work with stable IDs |
+| FR-16 | Pages and files | Manual block editing, versions, uploads, ingestion states, download, and removal follow access rules |
+| FR-17 | Bounded tables | Typed grid CRUD/filter/sort/CSV and scoped agent proposals work with stable IDs in inline and full-page presentations |
 | FR-18 | Canonical resources | Two agent bindings reference one resource; removing access affects future retrieval |
 | FR-19 | Skill versions | Assignments pin a version; updates are explicit; runs record the version used |
 | FR-20 | Long-term memories | Owner inspects, corrects, scopes, and deletes memories; future retrieval respects changes |
@@ -202,6 +213,9 @@ Existing FR-01–FR-14 identifiers are retained and refined; FR-15–FR-26 exten
 | FR-24 | Subscription lifecycle | Readiness, payment, cancellation, suspension, retention, and export states are explicit |
 | FR-25 | AI-credit wallet | Top-ups, reservations, settlement, limits, and receipts reconcile without duplicate accounting |
 | FR-26 | Manual-work independence | Zero AI balance pauses AI execution while entitled manual workspace use continues |
+| FR-27 | Structured pages | Supported blocks, slash insertion, accessible reordering, autosave, versions, and faithful native export |
+| FR-28 | Page hierarchy | Nested navigation, stable links, cycle-safe moves, breadcrumbs, favorites, and explicit Trash/descendant behavior |
+| FR-29 | Linked table views | Inline/full-page grid views share canonical data, preserve view settings, and enforce current resource/row/field grants |
 
 ## 11. Success measures and release sequence
 

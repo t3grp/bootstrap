@@ -1,14 +1,14 @@
 # Bootstrap interface and design system
 
-Version: 0.2 draft. Date: 6 November 2026. Primary visual language: AffectUI; supplemental components: BeUI. “Effect UI” is interpreted as AffectUI from t3UI. Implementation status: planned.
+Version: 0.3 draft. Date: 6 November 2026. Primary visual language: AffectUI; supplemental components: BeUI. “Effect UI” is interpreted as AffectUI from t3UI. Implementation status: planned.
 
 ## 1. Workspace-first direction
 
-The centrepiece is the user's workspace: projects, documents, tables, files, personal tasks, and conversations. Agents are available within that work. The initial screen should help a user find or create useful material before asking them to configure a team.
+The centrepiece is the user's page-centered workspace: nested pages, content blocks, inline tables, files, personal tasks, and conversations. Notion supplies the interaction reference for writing, organizing pages, and working with structured data. Pages is the user-facing term for canonical Documents; do not create two content stores. Agents are available within that work. The initial screen should help a user find or create useful material before asking them to configure a team.
 
 The [Bench walkthrough](https://x.com/thekitze/status/2118237135698632943) informs the information architecture: a light Everything overview with grouped project/“Benches” cards, a right-side To-dos/Notes/Scratchpad area, compact agent statuses at the bottom, and a focused Today view. Bootstrap adopts these organizational ideas with its own Projects terminology, branding, content, and implementation. Do not copy Bench imagery or imply component/source reuse.
 
-AffectUI provides the typography, spacing, surfaces, borders, and interaction language. Adapt BeUI through one token layer. Keep readable work surfaces and restrained accents; avoid invented revenue, hours-saved, productivity, or confidence metrics.
+The workspace should feel familiar to a Notion user while retaining Bootstrap's own identity. The public marketing page follows the Linear-inspired composition in [landing-page specification](landing-page-spec.md); Muse's implementation brief is [here](muse-handoff.md). AffectUI provides adaptable components for typography, spacing, surfaces, borders, and interactions. Adapt BeUI through one token layer. Keep readable work surfaces and restrained accents; avoid invented revenue, hours-saved, productivity, or confidence metrics.
 
 ## 2. Navigation and routes
 
@@ -19,7 +19,7 @@ Workspace routes are relative to `/w/:workspaceId`; the server validates every s
 | Everything | `/` | Grouped projects, recent resources, personal capture |
 | Today | `/today` | My commitments, due work, decisions, active assignments |
 | Projects | `/projects`, `/projects/:projectId` | Objective, tasks, documents, tables, files, chat, activity |
-| Documents | `/documents`, `/documents/:documentId` | Editable canonical content, versions, sources |
+| Pages | `/pages`, `/pages/:documentId` | Nested page tree, structured blocks, versions, sources; Document IDs remain canonical |
 | Tables | `/tables`, `/tables/:tableId` | Typed data, grid controls, proposed changes |
 | Files | `/files`, `/files/:fileId` | Uploads, metadata, processing, access, versions |
 | Chat | `/chat/:threadId` | Workspace/project/direct-agent conversation |
@@ -31,7 +31,7 @@ Workspace routes are relative to `/w/:workspaceId`; the server validates every s
 | Settings | `/settings` | Profile, policies, limits, export |
 | Account | `/account/billing`, `/account/instance` | Subscription, wallet, provisioning and lifecycle |
 
-The main sidebar contains Everything/Today, Projects, Documents, Tables, Files, Chat, and Team. Connections and Settings sit below; Usage & billing opens the account view. Routines are reachable from projects and agents. A review badge opens pending decisions. Global resource views filter by project and reference the same objects.
+The sidebar starts with Everything/Today, Search, Favorites, and an expandable workspace page tree. Projects, Tables, and Files remain secondary collection views; Team and Chat support the work. Connections and Settings sit below; Usage & billing opens the account view. Routines are reachable from projects and agents. A review badge opens pending decisions. Collection views and page embeds reference the same canonical resources.
 
 ## 3. Main work surfaces
 
@@ -39,17 +39,21 @@ The main sidebar contains Everything/Today, Projects, Documents, Tables, Files, 
 
 Everything groups project cards and recent resources. A collapsible right panel holds personal To-dos, Notes, and Scratchpad; entries persist and can become canonical tasks/documents without AI. A compact bottom strip shows agent readiness/activity with links to actual runs. It must not obscure content or suggest idle agents consume continuous model usage.
 
-Today prioritizes the user's commitments, overdue work, reviewable outputs, and active assignments. A new workspace offers Create project, Add document, Upload file, Create table, and a labeled demo. Team configuration is optional.
+Today prioritizes the user's commitments, overdue work, reviewable outputs, and active assignments. A new workspace offers Create page, Create project, Upload file, Create table, and a labeled demo. Team configuration is optional.
 
 ### Projects and resources
 
-Project tabs are Overview, Tasks, Documents, Tables, Files, Chat, and Activity. A project card opens real work, not an automatic agent run. Task assignees include Me, an agent, and Unassigned. Manual edits and completion remain available with no AI balance.
+Project tabs are Overview, Tasks, Pages, Tables, Files, Chat, and Activity. Overview can open the project's canonical home page. A project card opens real work, not an automatic agent run. Task assignees include Me, an agent, and Unassigned. Manual edits and completion remain available with no AI balance.
 
-Documents show save state, versions, sources, and agent-proposed revisions. Files distinguish upload from ingestion and preserve download for unsupported formats. Removal explains relevant access/retention effects; old activity links cannot bypass current permissions.
+Pages show breadcrumbs, an editable title, optional icon, compact metadata/actions, a readable content canvas, save state, versions, sources, and agent-proposed revisions. The slash menu inserts supported blocks; hover/focus reveals the block handle and menu. Keyboard operations provide an equivalent to drag reordering. Favorites and nested pages update without losing stable links.
 
-Tables provide a typed grid, search/filter/sort, row selection, CSV import/export, validation, and accessible row editing. No formula or relational-builder controls appear initially. Agent changes show row/field diffs and affected counts. A stale version produces a conflict view; the user can compare and reapply without losing newer work.
+Use a default reading width around 760 CSS px, with an explicit full-width page setting for dense tables. Page hierarchy and simple list nesting are supported; a general layout builder is outside initial scope. Enter creates a paragraph/list item and Shift+Enter inserts a soft break. These are editor semantics, distinct from chat submission. Autosave visibly distinguishes saving, saved, offline/failed, and conflict; preserve unsaved text and cursor/selection on recoverable errors.
 
-Selecting document content, table rows, or files enables Ask an agent. The composer visibly lists the exact resources being shared. Agent Files/Tables lists link back to the originals.
+Files show upload state, versions, and current access. Files distinguish upload from ingestion and preserve download for unsupported formats. Removal explains relevant access/retention effects; old activity links cannot bypass current permissions.
+
+Tables provide a typed grid, search/filter/sort, row selection, CSV import/export, validation, and accessible row editing. Inline and full-page views use the same canonical table; named views retain their own filters/sort/visible columns. Opening a row shows a property drawer. Removing a table-view block leaves the table intact. No formula or relational-builder controls appear initially. Agent changes show row/field diffs and affected counts. A stale version produces a conflict view; the user can compare and reapply without losing newer work.
+
+Selecting text, blocks, table rows, or files enables Ask an agent in an optional right panel. Show the selected agent, exact attached page/version/block IDs or table rows, request, current run, and proposal. Keep the page's scroll and selection while the panel opens. On mobile, use a separate full-screen panel with a clear return action and preserved draft. A page attachment never silently shares all descendants or ungranted embedded resources. Agent Files/Tables lists link back to the originals.
 
 ### Chat
 
@@ -110,6 +114,7 @@ Inspected baseline: t3UI commit `66ff17008ebf30e73e7662234e3f14660f8a5c14`. Path
 | Composer | `affectui/recreated/chat-composer.tsx` | Real acknowledgements/context; remove simulated approval/connection and dictation |
 | Screen reference | `affectui/recreated/screens.tsx` | Replace fixtures with canonical project/resource contracts |
 | Tasks | `affectui/recreated/blocks.tsx`, TaskBoard | Stable IDs, controlled state, human assignees |
+| Page editor | A separately evaluated permissively licensed block-editor foundation | Structured document schema, stable block IDs, slash insertion, keyboard controls, safe rendering, and controlled proposal application; catalogue layout blocks are not an editor |
 | Runs | `affectui/recreated/agent-run.tsx` | Server-controlled progress; remove local restart/approval transitions |
 | Approval | `affectui/recreated/approval-card.tsx` | Exact revision, async decision, expiry; disable broad Always |
 | Review | `affectui/recreated/review-center.tsx` | Durable decisions; no misleading local undo |

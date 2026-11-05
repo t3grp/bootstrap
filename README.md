@@ -8,7 +8,7 @@ Bootstrap will support two deployment paths: a complete self-hosted open-source 
 
 ## Project status
 
-**Specification stage — version 0.2, 6 November 2026.** The documents below describe the proposed first release, incorporating the Bench workspace reference, Openbot communication patterns, and paid instance deployment. Application code, integrations, deployment, and product acceptance are not implemented by this documentation change.
+**Specification stage — version 0.3, 6 November 2026.** The documents below describe the proposed first release, incorporating a Notion-like page workspace, a Linear-inspired public landing page, the Bench overview reference, Openbot communication patterns, and paid instance deployment. Application code, integrations, deployment, and product acceptance are not implemented by this documentation change.
 
 | Document | Purpose |
 | --- | --- |
@@ -16,14 +16,16 @@ Bootstrap will support two deployment paths: a complete self-hosted open-source 
 | [Technical design](docs/technical-design.md) | Runtime, Composio boundary, persistence, APIs, recovery, deployment |
 | [Agent architecture](docs/agent-architecture.md) | Persistent agents, six resource areas, durable communication, task ownership, delegation |
 | [Hosted service](docs/hosted-service.md) | Subscription, one instance per subscriber, provisioning, AI-credit ledger, recovery |
-| [Interface and design system](docs/ux-design.md) | Screens, interaction states, AffectUI/BeUI adoption, accessibility |
+| [Interface and design system](docs/ux-design.md) | Page/block workspace, interaction states, AffectUI/BeUI adoption, accessibility |
+| [Landing-page specification](docs/landing-page-spec.md) | Linear-inspired visual brief, complete copy, product-preview fixtures, CTA map, responsive acceptance |
+| [Muse handoff](docs/muse-handoff.md) | Ready-to-use implementation brief for the landing page |
 | [Implementation plan](docs/implementation-plan.md) | Ordered build slices, acceptance scenarios, release gates |
 | [Decision register](docs/decisions.md) | Proposed defaults, trade-offs, decisions needed before release |
 | [Source notes](docs/sources.md) | Documentation and repository observations behind this proposal |
 
 ## Proposed first release
 
-- A useful workspace with projects, manual tasks, documents, bounded tables, and files, including when no AI credits are available.
+- A Notion-like workspace with nested block pages, slash commands, linked table views, projects, manual tasks, and files, including when no AI credits are available.
 - Growth/Research, Operations, and custom agents; an optional Chief of Staff template.
 - Instructions, pinned skills, routines, editable memories, file bindings, and table bindings for every agent.
 - Contextual chat, direct assignments, durable agent-to-agent messages, and visible execution history.
@@ -42,4 +44,4 @@ Apache-2.0 is proposed for newly authored Bootstrap code; the project license ha
 
 Openbot is an architectural reference for persistent agents and messaging. The inspected upstream uses PolyForm Noncommercial 1.0.0; Bootstrap's commercial-capable implementation will be original, without copying that source. See [source notes](docs/sources.md) for the pinned reference and the design-system provenance.
 
-The first implementation milestone is a working workspace: create a project, write a document, maintain a small table, upload a file, and manage personal tasks without AI. The next slice adds one configured agent that uses selected resources, produces a saved result, and recovers its run after a worker restart. Bounded teamwork, connected actions, routines, and hosted billing follow as explicit launch gates.
+The first implementation milestone is a working workspace: create a project home page and subpage, write with blocks, maintain an inline table, attach a file, and manage personal tasks without AI. The next slice adds one configured agent that uses selected resources, produces a saved result, and recovers its run after a worker restart. Bounded teamwork, connected actions, routines, and hosted billing follow as explicit launch gates.

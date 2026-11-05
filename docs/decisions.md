@@ -1,11 +1,13 @@
 # Bootstrap decision register
 
-Date: 6 November 2026. Version: 0.2 draft. The product direction below follows the user's stated requirements; implementation defaults remain proposals until built and validated.
+Date: 6 November 2026. Version: 0.3 draft. The product direction below follows the user's stated requirements; implementation defaults remain proposals until built and validated.
 
 ## Confirmed product direction
 
 - Open-source business workspace for founders and solo entrepreneurs.
-- The user's projects, documents, files, tables, tasks, and conversations are central; agents support the user.
+- The user's pages, projects, files, tables, tasks, and conversations are central; agents support the user.
+- The workspace should feel like Notion: nested pages, content blocks, slash insertion, and linked table views.
+- The landing page should have a Linear-like feel; the owner will hand the implementation brief to Muse.
 - Each agent exposes instructions, skills, routines, memories, files, and tables.
 - Agent communication follows useful Openbot architectural patterns through an original implementation.
 - Composio connects the user's business services.
@@ -18,7 +20,9 @@ Date: 6 November 2026. Version: 0.2 draft. The product direction below follows t
 | --- | --- | --- |
 | Initial customer | Solo founders and small knowledge businesses | Focuses on customer work, research, planning, and operations |
 | Ownership | One owner per workspace initially; one hosted account/instance per subscriber, with multiple workspaces | Business boundaries remain explicit without charging automatically for every project/workspace |
-| Workspace resources | Canonical projects, documents, files, typed tables, and manual tasks | Users and agents work on the same information; agent profile resources are bindings |
+| Workspace resources | Canonical projects, structured Documents presented as Pages, files, typed tables, and manual tasks | Users and agents work on the same information; agent profile resources are bindings |
+| Page editor | Stable-ID block schema, page tree, slash menu, versions, native export | Markdown remains interchange; whole-page optimistic concurrency is sufficient initially |
+| Linked tables | Named grid views inline or full-page, referencing canonical tables | Filters are presentation settings; grants still apply |
 | Agent team | Directly usable Growth/Research and Operations templates, custom agents, optional Chief of Staff | Coordination is a convenience, not a prerequisite |
 | Agent communication | Persistent identities, separate task threads, durable messages/deliveries, action versus notification | Work survives restart and acknowledgements do not create endless model turns |
 | Delegation | One level, three child assignments, shared message/step/time/spend limits | Bounded collaboration with one responsible task owner |
@@ -28,7 +32,8 @@ Date: 6 November 2026. Version: 0.2 draft. The product direction below follows t
 | First connectors | Gmail, Calendar, Notion, GitHub | Certify a small set of actions for the launch/client-delivery workflows |
 | First connected slice | Notion read and reviewed page creation | Exercises account binding, evidence, authorization, dispatch, and receipt handling |
 | Runtime | TypeScript, Next.js, AI SDK, PostgreSQL, pg-boss, separate worker | Portable core with durable execution and a modest infrastructure footprint |
-| UI language | AffectUI primary; selected BeUI components; Bench as workspace-layout inspiration | Uses the requested source while keeping business work central |
+| UI language | Notion-like workspace interactions with AffectUI/BeUI components; Linear-inspired marketing composition; Bench overview ideas | Distinct public and product surfaces share Bootstrap identity |
+| Landing launch mode | Explicit concept preview and real GitHub/spec links | Muse can implement now without nonfunctional signup, waitlist, checkout, or unsupported availability claims |
 | External actions | Exact review unless specifically or narrowly pre-authorized | Authorization binds to actual account, target, content, and attachments |
 | Managed infrastructure | Per-user app/worker containers, separate database credentials and private storage, on potentially shared hosts | Fulfils an instance promise without implying dedicated hardware |
 | Hosting revenue | Recurring subscription for capacity and operations | Kept independent of AI consumption and credit balance |
@@ -56,7 +61,7 @@ These decisions do not block writing the workspace foundation or deterministic a
 
 ## Deferred scope
 
-A visual workflow canvas, arbitrary code/browser/MCP execution, a skill marketplace, deep org charts, formulas/relations/rollups, real-time multi-human editing, and autonomous purchases can follow demonstrated usage. All six basic agent resource areas and managed subscription/credit behavior belong to the intended first product; they are not deferred away.
+A visual workflow canvas, arbitrary code/browser/MCP execution, a skill marketplace, deep org charts, formulas/relations/rollups, record-as-page polymorphism, synced blocks, arbitrary page layouts/embeds, real-time multi-human editing, and autonomous purchases can follow demonstrated usage. Nested block pages and inline/full-page table views belong to the initial workspace. All six basic agent resource areas and managed subscription/credit behavior belong to the intended first product; they are not deferred away.
 
 Start with a Postgres queue and simple container operations. Reconsider a larger workflow engine or orchestration platform only when measured needs justify it; neither removes the need to reconcile external actions or provider charges.
 

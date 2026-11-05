@@ -1,6 +1,6 @@
 # Bootstrap hosted service
 
-Version: 0.2 proposal. This document adds paid managed hosting and prepaid AI usage to the open-source Bootstrap application. It defines implementation contracts; no hosting provider, price, commercial policy, or live infrastructure has been selected or provisioned.
+Version: 0.3 proposal. This document adds paid managed hosting and prepaid AI usage to the open-source Bootstrap application. It defines implementation contracts; no hosting provider, price, commercial policy, or live infrastructure has been selected or provisioned.
 
 ## 1. Product and ownership contract
 

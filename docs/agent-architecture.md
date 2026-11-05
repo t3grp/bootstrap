@@ -1,6 +1,6 @@
 # Bootstrap agent architecture
 
-Version: 0.2 proposal. This document defines the agent resource and collaboration contracts for the initial implementation. Read it with the [technical design](technical-design.md); its action gateway, approvals, connection bindings, and recovery requirements continue to apply.
+Version: 0.3 proposal. This document defines the agent resource and collaboration contracts for the initial implementation. Read it with the [technical design](technical-design.md); its action gateway, approvals, connection bindings, and recovery requirements continue to apply.
 
 ## 1. Product and implementation boundary
 

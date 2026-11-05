@@ -1,6 +1,6 @@
 # Bootstrap technical design
 
-Version: 0.2 proposal, revised around a user workspace, persistent agents, and paid managed instances. All stack choices and limits below are implementation recommendations. No live service has been provisioned by this specification change.
+Version: 0.3 proposal, revised around a user workspace, persistent agents, and paid managed instances. All stack choices and limits below are implementation recommendations. No live service has been provisioned by this specification change.
 
 ## 1. Architecture
 
@@ -80,8 +80,10 @@ Use opaque IDs. Tenant-owned tables include `workspace_id`, timestamps, and appr
 | Record | Important fields and relationships |
 | --- | --- |
 | Workspace / Membership | Owner, name, timezone, locale, settings; one active owner membership in initial UI; hosted account/instance mapping is deployment metadata |
-| Project | Workspace, objective, status, owner, resource references, task views, conversation, revision |
-| Document / DocumentVersion | Canonical document ID, optional project, kind `document`/`note`/`scratchpad`, Markdown content, author, version, provenance; user and agent edits share the same version history |
+| Project | Workspace, objective, status, owner, optional home_document_id, resource references, task views, conversation, revision |
+| Document / DocumentVersion | Canonical page ID, optional project/parent_document_id, sibling order, kind, page metadata; immutable schema_version and structured block content with stable block IDs, derived search text, author, revision, provenance |
+| TableView | Workspace, canonical table ID, name, grid configuration, filters, sort, visible column IDs, revision; full-page and inline presentations share records |
+| PageFavorite | Workspace/member/document ID and personal sort order; does not change resource access |
 | File / FileVersion | Workspace/project, opaque storage key, MIME type, size, hash, uploader, revision, parsing state, retention |
 | BusinessTable / TableColumn / TableRecord | Stable table/column/row IDs, constrained field types, schema revision, per-row revision, validated values, provenance |
 | ResourceGrant / AgentResourceBinding | Agent, typed document/file/table resource ID, operation/field/row scope, grant version and expiry; bindings never copy the underlying resource |
@@ -97,7 +99,7 @@ Use opaque IDs. Tenant-owned tables include `workspace_id`, timestamps, and appr
 | Run / RunStep | Task/thread, root/parent run, configuration snapshot, agent/skill/memory versions, status, checkpoint, lease epoch, limits, source snapshots |
 | RunEvent | Run, monotonic sequence, event kind, sanitized payload, timestamp |
 | Artifact / ArtifactVersion | Immutable run-output receipt linked to canonical document/file/table/task versions; review state, citations, content hash, author; no duplicate user library |
-| ResourceChangeSet | Proposed document or table changes, base schema/row/content revisions, authoring task, reviewed payload hash, accepted/rejected/conflict status |
+| ResourceChangeSet | Proposed block-aware page or table changes, base document/schema/row revisions, target block/row IDs, authoring task, reviewed payload hash, accepted/rejected/conflict status |
 | Action / ActionAttempt | Capability, connection, target, canonical payload hash, state, operation key, provider receipt, uncertainty |
 | Approval | Action revision/hash, authorized actor, exact decision, expiry, permission snapshot, consumed state |
 | KnowledgeSource / SourceVersion | Type, remote reference or file, content hash, access scope, freshness, ingest state |
@@ -113,7 +115,17 @@ The separate control-plane database contains `HostedAccount`, `HostingSubscripti
 
 The user owns every workspace resource. The agent's Files tab binds canonical documents or files; the Tables tab binds canonical tables. All refer to the same items visible in the workspace/project. Resource existence, project participation, and agent-group membership do not imply access. Check grants before reads, context assembly, writes, and attachment handoff. Notes and Scratchpad use workspace-scoped Document kinds with ordinary revisions, access, and export; they are not browser-only state. Converting a note to a project document changes its kind/project while preserving its identity and history.
 
-Start with a Markdown document editor and constrained structured tables. Table field types are text, number, date, checkbox, single select, URL, and file reference. Store schemas and typed values in application-owned records, using validated JSON values with stable column IDs and indexes for supported queries. Do not create arbitrary SQL tables or expose SQL execution to agents. Bound import rows/cells, query pagination, bulk mutations, and supported file size; benchmark and publish the initial capacities before release.
+Start with a structured block editor and constrained structured tables. Pages is the user-facing name for canonical Documents; do not create a competing Page content store. Markdown is an import/export format. Table field types are text, number, date, checkbox, single select, URL, and file reference. Store schemas and typed values in application-owned records, using validated JSON values with stable column IDs and indexes for supported queries. Do not create arbitrary SQL tables or expose SQL execution to agents. Bound import rows/cells, query pagination, bulk mutations, and supported file size; benchmark and publish the initial capacities before release.
+
+The page schema supports paragraph, heading, bulleted/numbered list, checklist, quote, callout, divider, code, file/image reference, child-page reference, linked table view, and task-list reference. A block has a stable ID, type, validated attributes, bounded inline content/children where supported, and typed resource references. Validate schema versions, node count/depth, sizes, safe links, and reference ownership server-side. The editor foundation is selected during B1 for license, schema control, keyboard support, and maintainability; adopting a component catalogue does not supply a complete block editor.
+
+DocumentVersion stores the authoritative structured content. Derive search text and Markdown from it; neither is written back as canonical data. Native export retains blocks, hierarchy, typed references, and a versioned manifest; Markdown export includes explicit fallbacks/notes for structures it cannot represent, with CSV for tables. Revisions preserve stable block identities where possible. A page's version is the initial concurrency boundary; simultaneous multi-human editing/CRDT infrastructure is deferred.
+
+Page moves use a transaction and validate same-workspace parentage, project relationships, cycle prevention, and sibling ordering. Page links use stable IDs. Page organization and favorites do not widen grants. Trash operations declare the exact page/subtree, preserve restoration metadata, and never delete unrelated linked resources. A removed reference block does not delete its target.
+
+TableView stores presentation settings only. Resource/row/field grants and the assignment's explicit selection are enforced before filtering results and before building context. Readable page content does not authorize its embedded table, file, task, or child-page target. Render inaccessible references as non-disclosing placeholders. Loading a page does not eagerly load all descendants or all table records.
+
+Ask an agent accepts explicit page version and selected block IDs, or canonical table/row/column IDs, then resolves that selection under current grants. Preserve selection provenance in the task/context snapshot; a generic parent-page grant cannot widen a narrower assignment. Checklist blocks remain page content until explicitly converted to a Task.
 
 Manual edits use optimistic version checks. Agent-generated changes carry exact base document/schema/row versions and an inspectable change set. Internal edits can execute under a specific user assignment or narrow standing grant; otherwise propose changes for review. Apply a reviewed small change set transactionally after validating every affected version. On conflict, keep the user's newer content and show a rebased proposal. Never silently overwrite it. Schema changes require an owner action or separately scoped explicit authorization.
 
@@ -258,7 +270,9 @@ Use authenticated, workspace-scoped endpoints with typed request/response schema
 | --- | --- |
 | `POST /api/workspaces` | Create workspace and owner membership |
 | `POST /api/w/:wid/projects` | Create a project without starting AI work |
-| `POST /api/w/:wid/documents` | Create canonical document; versioned edits use a revision precondition |
+| `POST /api/w/:wid/documents` | Create canonical page/document and supported structured content; versioned edits use a revision precondition |
+| `POST /api/w/:wid/documents/:id/move` | Validate parent/workspace, cycle safety, project relationship, sibling order, and expected revision |
+| `POST /api/w/:wid/table-views` | Create a named presentation of a canonical table; view filters grant no access |
 | `POST /api/w/:wid/files` | Authorize private upload, validate metadata/content, return canonical file ID |
 | `POST /api/w/:wid/tables` | Create constrained schema; row CRUD/import/export enforce typed values and revision limits |
 | `POST /api/w/:wid/change-sets/:id/apply` | Validate scope, authorization, payload, and all base versions before atomic apply |
