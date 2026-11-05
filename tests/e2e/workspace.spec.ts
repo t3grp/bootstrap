@@ -83,6 +83,15 @@ test("owner creates a real workspace, writes blocks, maintains a table, and conf
   } else {
     await login(page);
   }
+  if (testInfo.retry > 0) {
+    // Keep retries isolated from resources left by an interrupted first attempt.
+    const current = await snapshot(page.request);
+    const fresh = await mutate(page.request, current.workspace.id, {
+      type: "workspace.create",
+      name: `Northstar Studio retry ${testInfo.retry}`,
+    });
+    await page.goto(`/w/${fresh.workspace.id}/everything`);
+  }
   await expect(
     page.getByRole("heading", { name: "Everything", exact: true }),
   ).toBeVisible();

@@ -33,6 +33,9 @@ the target; this document describes what the code actually does.
   ProseMirror transactions: valid block defaults, invalid structures, stable IDs,
   block movement/duplication/deletion, selection preservation across JSONB save
   acknowledgements, explicit revision replacement, and typed cell parsing.
+- Five persistence regressions passed against the database: rapid cell edits
+  across stale renders, genuine concurrent conflicts, workspace-scoped
+  acknowledgements, and interleaved page/table writes between commit and response.
 - The live HTTP end-to-end scenario passed against the production standalone
   bundle: setup/sign-in, scoped resource writes, stale revisions, same-origin
   checks, private upload/download, export, and closed registration.

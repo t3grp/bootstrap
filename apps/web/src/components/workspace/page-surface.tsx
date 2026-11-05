@@ -35,6 +35,7 @@ import type {
 import { PageEditor } from "@/components/editor/page-editor";
 import { ApiError, getWorkspace } from "@/lib/api";
 import { Button, Dialog, FormError, IconButton, dateLabel } from "./ui";
+import { confirmedSaveRevision } from "./save-revisions";
 
 type Mutate = (command: WorkspaceCommand) => Promise<WorkspaceSnapshot>;
 type SaveState = "saved" | "unsaved" | "saving" | "error" | "conflict";
@@ -90,13 +91,14 @@ export function PageSurface({
     const flush = (async () => {
       while (dirty.current && !conflict.current && mounted.current) {
         const submitted = draftRef.current;
+        const submittedRevision = revision.current;
         setSaveState("saving");
         setError(null);
         try {
           const result = await mutate({
             type: "page.update",
             id: submitted.id,
-            revision: revision.current,
+            revision: submittedRevision,
             patch: {
               title: submitted.title.trim() || "Untitled",
               icon: submitted.icon,
@@ -111,7 +113,10 @@ export function PageSurface({
           });
           const saved = result.pages.find((item) => item.id === submitted.id);
           if (!saved) throw new Error("The saved page could not be loaded.");
-          revision.current = saved.revision;
+          revision.current = confirmedSaveRevision(
+            submittedRevision,
+            saved.revision,
+          );
           latestServer.current = saved;
           if (draftRef.current === submitted) {
             dirty.current = false;

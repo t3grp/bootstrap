@@ -71,6 +71,10 @@ import { AgentSurface } from "./agent-surface";
 import { PageSurface } from "./page-surface";
 import { TaskList } from "./task-list";
 import {
+  AcknowledgedTableRevisions,
+  confirmedSaveRevision,
+} from "./save-revisions";
+import {
   Button,
   Dialog,
   EmptyState,
@@ -149,6 +153,7 @@ export function WorkspaceApp({
   >({});
   const tableDraftsRef = useRef<Record<string, WorkspaceTable>>({});
   const tableRevisions = useRef<Record<string, number>>({});
+  const acknowledgedTableRevisions = useRef(new AcknowledgedTableRevisions());
   const [tableErrors, setTableErrors] = useState<Record<string, string>>({});
   const tableErrorsRef = useRef<Record<string, string>>({});
   const tableSaves = useRef<Partial<Record<string, Promise<boolean>>>>({});
@@ -198,11 +203,12 @@ export function WorkspaceApp({
       const saving = (async () => {
         while (tableDraftsRef.current[id]) {
           const submitted = tableDraftsRef.current[id];
+          const submittedRevision = tableRevisions.current[id];
           try {
             const next = await mutate({
               type: "table.update",
               id,
-              revision: tableRevisions.current[id],
+              revision: submittedRevision,
               patch: {
                 name: submitted.name,
                 description: submitted.description,
@@ -212,7 +218,16 @@ export function WorkspaceApp({
             });
             const saved = next.tables.find((table) => table.id === id);
             if (!saved) throw new Error("The saved table could not be loaded.");
-            tableRevisions.current[id] = saved.revision;
+            const acknowledgedRevision = confirmedSaveRevision(
+              submittedRevision,
+              saved.revision,
+            );
+            acknowledgedTableRevisions.current.recordSuccessfulWrite(
+              next.workspace.id,
+              saved.id,
+              submittedRevision,
+            );
+            tableRevisions.current[id] = acknowledgedRevision;
             if (tableDraftsRef.current[id] === submitted) {
               delete tableDraftsRef.current[id];
               setTableDrafts({ ...tableDraftsRef.current });
@@ -245,7 +260,11 @@ export function WorkspaceApp({
   const persistTable = useCallback(
     (table: WorkspaceTable) => {
       if (!tableDraftsRef.current[table.id])
-        tableRevisions.current[table.id] = table.revision;
+        tableRevisions.current[table.id] =
+          acknowledgedTableRevisions.current.forDraft(
+            snapshotRef.current.workspace.id,
+            table,
+          );
       tableDraftsRef.current[table.id] = table;
       setTableDrafts({ ...tableDraftsRef.current });
       void saveTable(table.id);
