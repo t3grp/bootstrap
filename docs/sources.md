@@ -14,6 +14,25 @@ Checked 6 November 2026, Singapore time. Repository observations establish the s
 
 No UI code or assets are copied by this documentation change. Source inspection is not browser acceptance or a universal parity claim.
 
+## Product reference: Bench
+
+The user supplied [Kitze's Bench concept](https://x.com/thekitze/status/2118237135698632943). The post and its images were inspected in a connected browser. The visible workspace overview groups projects/benches, places personal to-dos, notes, and scratchpad alongside work, and keeps agent status compact. The related [Today view](https://x.com/thekitze/status/2118237154224767408) supports reviewing work by day. These observations inform Bootstrap's workspace hierarchy; they do not establish Bench's implementation or authorize copying its assets or branding.
+
+## Openbot architectural reference
+
+The inspected public source is `nightly-labs/openbot` at commit `4b39c9a497cfd4af7a718cfdeab52e2059ca6b91`. Bootstrap's design adapts architectural ideas through original implementation. The upstream [README identifies PolyForm Noncommercial 1.0.0](https://github.com/nightly-labs/openbot/blob/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/README.md); this is not a permissively licensed code dependency for the proposed paid service. No upstream source is copied by these specs.
+
+| Pinned source | Observation used |
+| --- | --- |
+| [Agent architecture](https://github.com/nightly-labs/openbot/blob/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/docs/architecture/agents.md) | Persistent identity with separate task execution threads and queues |
+| [Channels and messaging](https://github.com/nightly-labs/openbot/blob/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/docs/architecture/channels-and-messaging.md) | One task owner, explicit delegation versus transfer, task-linked results |
+| [Mailbox records](https://github.com/nightly-labs/openbot/blob/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/src/backend/mailbox-store.ts) | Message content/provenance separate from per-recipient delivery state |
+| [Skills and plugins](https://github.com/nightly-labs/openbot/blob/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/docs/architecture/skills-and-plugins.md) | Skill entrypoints, versioned library material and agent installations |
+| [Memory contract](https://github.com/nightly-labs/openbot/blob/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/packages/contracts/src/ipc-agent-memories.ts) | Attributed memory with selected versus searchable inclusion |
+| [Table implementation](https://github.com/nightly-labs/openbot/blob/4b39c9a497cfd4af7a718cfdeab52e2059ca6b91/src/backend/agent-data/agent-tables.ts) | Shared tables and creator schema ownership; Bootstrap instead requires explicit resource grants |
+
+The requested six-resource model, action/notification admission, original server runtime, permissions, and hosted credit controls are Bootstrap design decisions. No compatibility or feature-parity claim is made.
+
 ## Composio
 
 | Official reference | Specific capability used in the design |
@@ -28,6 +47,21 @@ No UI code or assets are copied by this documentation change. Source inspection 
 | [Deleting connected accounts](https://docs.composio.dev/reference/api-reference/connected-accounts/deleteConnectedAccountsByNanoid) | Local disconnection versus optional asynchronous provider revocation |
 
 The design deliberately adds Bootstrap-owned authorization, resource constraints, approvals, idempotency records, and recovery. Composio integration availability does not establish that every action is tested or that its effects are safe to retry. Capability slugs and schema versions must be resolved and pinned during implementation.
+
+## Managed hosting and payment
+
+| Official reference | Specific behavior relevant to the proposal |
+| --- | --- |
+| [Subscription webhooks](https://docs.stripe.com/billing/subscriptions/webhooks) | Asynchronous state; a paid invoice and current active subscription support provisioning |
+| [Checkout fulfillment](https://docs.stripe.com/checkout/fulfillment.md?ui=full-page) | Server-verified payment state and repeated/concurrent fulfillment; redirects alone are insufficient |
+| [Webhook guidance](https://docs.stripe.com/webhooks) | Raw-body signatures, duplicate delivery, unordered events, and provider-object reconciliation |
+| [Billing credits](https://docs.stripe.com/billing/subscriptions/usage-based/billing-credits) | Credits apply to eligible metered subscription items through Meters and invoice finalization |
+| [Idempotent requests](https://docs.stripe.com/api/idempotent_requests) | Supported request retries and the need for longer-lived application intent records |
+| [Subscription lifecycle](https://docs.stripe.com/billing/subscriptions/overview) | Distinct incomplete, past-due, unpaid, paused, and canceled states |
+| [Cancellation](https://docs.stripe.com/billing/subscriptions/cancel) | Scheduled period-end cancellation versus ended subscription |
+| [Refunds](https://docs.stripe.com/refunds) | Pending, successful, and failed refund states need reconciliation |
+
+The per-user instance, control-plane gateways, prepaid runtime ledger, grace/retention proposals, and pricing structure are Bootstrap recommendations. They are not hosting guarantees, Stripe-mandated architecture, adopted commercial terms, or measured costs.
 
 ## Runtime and distribution
 

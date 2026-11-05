@@ -1,133 +1,134 @@
 # Bootstrap interface and design system
 
-Version: 0.1 proposal. Primary visual language: AffectUI. Supplemental components: BeUI. “Effect UI” in the product brief is interpreted as AffectUI from t3UI.
+Version: 0.2 draft. Date: 6 November 2026. Primary visual language: AffectUI; supplemental components: BeUI. “Effect UI” is interpreted as AffectUI from t3UI. Implementation status: planned.
 
-## 1. Interface principles
+## 1. Workspace-first direction
 
-The interface makes four questions easy to answer: what is being worked on, what needs the founder, what was produced, and what changed in connected services. Chat, tasks, runs, artifacts, and approvals are linked views of the same work.
+The centrepiece is the user's workspace: projects, documents, tables, files, personal tasks, and conversations. Agents are available within that work. The initial screen should help a user find or create useful material before asking them to configure a team.
 
-Use quiet surfaces, readable work lists, clear status labels, and a restrained accent. Give the current assignment and output more space than agent avatars. Home does not contain invented revenue, productivity, hours-saved, or confidence metrics.
+The [Bench walkthrough](https://x.com/thekitze/status/2118237135698632943) informs the information architecture: a light Everything overview with grouped project/“Benches” cards, a right-side To-dos/Notes/Scratchpad area, compact agent statuses at the bottom, and a focused Today view. Bootstrap adopts these organizational ideas with its own Projects terminology, branding, content, and implementation. Do not copy Bench imagery or imply component/source reuse.
 
-AffectUI supplies the primary typography, spacing, surface, border, and interaction language. BeUI components are adapted to the same token layer. Bootstrap owns its product components, routes, and state contracts.
+AffectUI provides the typography, spacing, surfaces, borders, and interaction language. Adapt BeUI through one token layer. Keep readable work surfaces and restrained accents; avoid invented revenue, hours-saved, productivity, or confidence metrics.
 
 ## 2. Navigation and routes
 
-All routes below are relative to `/w/:workspaceId`. Workspace selection is validated by the server.
+Workspace routes are relative to `/w/:workspaceId`; the server validates every selection. Billing and instance status are account-level.
 
-| Surface | Route | Content and primary action |
+| Surface | Route | Main content |
 | --- | --- | --- |
-| Today | `/` | Needs you, working now, recent results; start work |
-| Chat | `/chat/:threadId` | Conversation, task proposals, citations, output links; send request |
-| Tasks | `/tasks` | Filterable list, optional board, assignee, due date, output; create task |
-| Task detail | `/tasks/:taskId` | Outcome, criteria, owner, outputs, attempts, activity; review or continue |
-| Team | `/team` | Agent roles, readiness, work, access, limits; create agent |
-| Agent detail | `/team/:agentId` | Instructions, context, tools/accounts, limits, history; configure or assign |
-| Knowledge | `/knowledge` | Profile, documents, selected connected sources, freshness; add context |
-| Connections | `/connections` | Accounts, granted use, health, dependent agents; connect or reconnect |
-| Review | `/approvals` | Exact actions and decisions; review next action |
-| Run detail | `/runs/:runId` | Persisted progress, children, tool summaries, costs, blockers; stop or resolve |
-| Artifact | `/artifacts/:artifactId` | Versions, edits, sources, origin task, external destinations; edit or export |
-| Routines | `/routines` | Schedules, timezone, next/last runs, pause; create routine |
-| Settings | `/settings` | Workspace, provider credentials, budgets, policies, export; manage settings |
+| Everything | `/` | Grouped projects, recent resources, personal capture |
+| Today | `/today` | My commitments, due work, decisions, active assignments |
+| Projects | `/projects`, `/projects/:projectId` | Objective, tasks, documents, tables, files, chat, activity |
+| Documents | `/documents`, `/documents/:documentId` | Editable canonical content, versions, sources |
+| Tables | `/tables`, `/tables/:tableId` | Typed data, grid controls, proposed changes |
+| Files | `/files`, `/files/:fileId` | Uploads, metadata, processing, access, versions |
+| Chat | `/chat/:threadId` | Workspace/project/direct-agent conversation |
+| Team | `/team`, `/team/:agentId` | Agent roster and configuration |
+| Task/run | `/tasks/:taskId`, `/runs/:runId` | Work, attempts, outputs, execution evidence |
+| Review | `/approvals` | Exact decisions and action revisions |
+| Routines | `/routines` | Schedules, scope, timezone, history |
+| Connections | `/connections` | Verified accounts, grants, health |
+| Settings | `/settings` | Profile, policies, limits, export |
+| Account | `/account/billing`, `/account/instance` | Subscription, wallet, provisioning and lifecycle |
 
-The main sidebar contains Today, Chat, Tasks, Team, Knowledge, and Connections. A persistent review count opens Review. Routines are reached through Today and Tasks; Settings sits in the workspace menu. Runs and artifacts are primarily reached from their tasks and chat links.
+The main sidebar contains Everything/Today, Projects, Documents, Tables, Files, Chat, and Team. Connections and Settings sit below; Usage & billing opens the account view. Routines are reachable from projects and agents. A review badge opens pending decisions. Global resource views filter by project and reference the same objects.
 
-## 3. Screen behavior
+## 3. Main work surfaces
 
-### Today
+### Everything and Today
 
-Order work by urgency and actionability. “Needs you” contains a concrete action or question and a task link. “Working” shows the responsible agent, current persisted step, elapsed active time, and stop control. “Recent results” links accepted or reviewable artifacts. A new workspace offers one starter outcome and a labeled demo.
+Everything groups project cards and recent resources. A collapsible right panel holds personal To-dos, Notes, and Scratchpad; entries persist and can become canonical tasks/documents without AI. A compact bottom strip shows agent readiness/activity with links to actual runs. It must not obscure content or suggest idle agents consume continuous model usage.
+
+Today prioritizes the user's commitments, overdue work, reviewable outputs, and active assignments. A new workspace offers Create project, Add document, Upload file, Create table, and a labeled demo. Team configuration is optional.
+
+### Projects and resources
+
+Project tabs are Overview, Tasks, Documents, Tables, Files, Chat, and Activity. A project card opens real work, not an automatic agent run. Task assignees include Me, an agent, and Unassigned. Manual edits and completion remain available with no AI balance.
+
+Documents show save state, versions, sources, and agent-proposed revisions. Files distinguish upload from ingestion and preserve download for unsupported formats. Removal explains relevant access/retention effects; old activity links cannot bypass current permissions.
+
+Tables provide a typed grid, search/filter/sort, row selection, CSV import/export, validation, and accessible row editing. No formula or relational-builder controls appear initially. Agent changes show row/field diffs and affected counts. A stale version produces a conflict view; the user can compare and reapply without losing newer work.
+
+Selecting document content, table rows, or files enables Ask an agent. The composer visibly lists the exact resources being shared. Agent Files/Tables lists link back to the originals.
 
 ### Chat
 
-Support business-wide chat and a direct agent thread. Show the responding role, sources, connected account where relevant, and linked tasks. A substantive assignment becomes a task card with objective, owner, expected output, completion criteria, and limits.
+Support workspace, project, and direct-agent threads. Show the responding agent, selected context, sources, and linked tasks/outputs. Assignments become task cards; ordinary note-taking does not silently delegate work.
 
-Enter submits; Shift+Enter inserts a newline. Preserve IME composition behavior. Do not clear the draft until the server acknowledges it. Allow cancel while streaming and preserve the partial result. Reconnection resumes persisted activity without resubmitting the message. Scrolling must respect a founder reading earlier messages.
+Enter submits; Shift+Enter inserts a newline; preserve IME behavior. Retain the draft until server acknowledgement. Cancelling streaming preserves useful partial output. Reconnection resumes persisted activity without resubmitting messages. Respect a user reading earlier history.
 
-Use structured cards for task proposals, clarification questions, artifacts, and external actions. A clarification answer is not an authorization to send or publish anything. Render sanitized text and safe links; external content cannot execute HTML or scripts.
+Use structured cards for questions, work proposals, revisions, and external actions. Answering a clarification is not permission to publish. Sanitize content and links; retrieved text cannot execute HTML or scripts.
 
-### Team and agent setup
+## 4. Agent setup and six property tabs
 
-The first form asks for role, intended outcome, instructions, and expected deliverables. Subsequent sections select context, exact accounts/capabilities, permission policy, and limits. Model tuning stays under Advanced.
+Users can create a specialist directly. Chief of Staff is an optional template. The roster distinguishes ready, paused, and needs setup; current work is a separate state.
 
-Before saving, show a plain-language capability summary such as “Reads the selected customer thread and product notes; prepares a reply; sending requires your review.” Agents do not inherit every workspace connection.
+An agent header shows its role, current assignments, capability summary, and Assign work. Provide exactly these six property tabs:
 
-The team roster distinguishes ready, paused, and needs setup. A ready agent can be idle. A running agent can have several assignments, within limits. An org chart can later help inspect larger teams; the initial roster and assignment list must work without one.
+| Tab | Required interaction |
+| --- | --- |
+| Instructions | Edit role, objectives, constraints, output expectations; inspect versions |
+| Skills | Select reusable procedures, see requirements, pin a version, explicitly accept updates |
+| Routines | Configure assignment, sources, pinned versions, schedule/timezone, limits; pause and inspect runs |
+| Memories | Inspect workspace/agent scope, provenance and inference status; correct, accept, or delete |
+| Files | Bind canonical documents/files; show access and processing state |
+| Tables | Bind canonical tables; inspect schema and permitted operations |
 
-### Tasks and artifacts
+Activity, inter-agent communication, tools/accounts, limits, and model settings are accessible from the header or contextual panel; they do not displace those properties. Model tuning stays under Advanced.
 
-Task detail shows the latest usable artifact even when a later action fails. Keep attempts and output revisions available subject to current artifact access and retention policy. Each artifact has an owner, task, source references, creation time, content version, and review state. Founder edits create a new version and invalidate affected pending actions.
+The capability summary names readable resources and permitted effects. Skills do not confer credentials. Existing runs show their configuration snapshot; current revocations still apply. Communication shows requester, recipient, task, shared context, result, and waiting state. Do not present unrestricted group chat as required coordination.
 
-The first release supports formatted text, research tables, and structured drafts. It does not need a complete office document suite. Label drafts and effects precisely: Draft in Bootstrap, Ready for review, Queued to send, Accepted by Gmail, or Could not confirm send outcome.
+## 5. Review, execution, and account control
 
-### Connections
+### Connections and external actions
 
-Show the actual account name/email or provider identifier, service, connection owner, state, grants, last check, and agents using it. Two accounts for the same service receive distinct labels. Reconnection must not silently attach another identity to an existing task.
+Connection cards show the actual identity, service, owner, grants, health, and dependent agents/routines. Same-service accounts remain distinguishable. OAuth failure is recoverable; success requires server verification. Reconnection cannot substitute another identity. Local disconnection and provider revocation show separate pending/failed/unsupported states.
 
-A connection is usable only after server verification. Cancellation or failure during OAuth shows a recoverable state. Disconnect lists affected routines and agents, removes future access, and invalidates affected queued work. Historical records retain appropriate redacted evidence. Display provider token revocation separately from local disconnection, including pending, failed, or unsupported revocation.
+Action review exposes operation, account, exact destination, recipient/resource, complete content or diff, attachments, affected count, and reason for review. Editing a material field creates a new action revision. Choosing Send/Approve authorizes that revision without another identical confirmation.
 
-### Action review
+Authorized/queued is distinct from completed. Double-clicks or two tabs cannot dispatch twice. Expired, superseded, rejected, and executed states differ. Standing grants are explicit settings with capabilities, resources, limits, expiry, and revocation; there is no unconditional Always allow everything shortcut. Do not offer misleading Undo for a sent message.
 
-Display exact operation, connected account, target, recipient or resource, full content or diff, attachment list, affected record count, and the reason review is required. Allow editing before authorization. Long payloads remain accessible on mobile.
+### Runs and outputs
 
-Approval uses a versioned server request. A successful approval is shown as authorized/queued, not as a completed external action. Double-clicking or acting in two tabs must not dispatch twice. Expired, superseded, rejected, and already-executed states have distinct messages.
+Task detail retains the latest usable output if a later action fails. Link output to canonical documents/files/table changes, source references, and versions. Access and retention remain enforced.
 
-Do not offer an unconditional “Always allow everything” shortcut. A standing grant is an explicit settings operation with named capabilities, resources, bounds, expiry, and revocation. Do not show Undo after a message is sent; an actual compensating action needs its own supported workflow.
+Run detail shows durable steps, child assignments, actual tool summaries, evidence, costs, and blockers. Expose useful summaries, never private model chain-of-thought or secrets. Retry appears only for server-classified safe operations. Stop prevents further dispatch and explains in-flight effects. Unknown write outcomes require verification rather than a blind retry.
 
-### Run detail
+### Hosted subscription and wallet
 
-Show a concise progress summary followed by expandable steps, source references, actions, and child assignments. Events come from durable server state. The view exposes useful action summaries and evidence, never private model chain-of-thought or secrets.
+Account views distinguish subscription entitlement, instance readiness, and AI balance. Checkout leads to visible provisioning; failed provisioning offers recovery without another unintended purchase. Display instance lifecycle, subscription renewal/cancellation, applicable access/retention, and export.
 
-Use specific remedies: reconnect an account, provide missing context, revise a rejected draft, increase a budget, or verify an uncertain action. Retry appears only when the server classifies the operation as safe to retry. Stop explains that it prevents further dispatch and cannot reverse completed external actions.
+Wallet shows balance, top-ups, reserved usage, settled charges, model/token breakdown, and limits. Launch with manual top-ups; a future automatic top-up feature requires explicit opt-in and a cap. Low balance pauses new AI work while entitled manual workspace use continues. Avoid blocking the document editor with an AI upsell. See [Hosted service](hosted-service.md) for lifecycle and accounting contracts.
 
-## 4. Verified component adoption map
+## 6. Component adoption and provenance
 
-Read-only inspection baseline: t3UI commit `66ff17008ebf30e73e7662234e3f14660f8a5c14`. Paths below are relative to `components/collections/libraries/`. These are candidates and adaptation requirements, not implemented Bootstrap features. See [source notes](sources.md).
+Inspected baseline: t3UI commit `66ff17008ebf30e73e7662234e3f14660f8a5c14`. Paths below are relative to `components/collections/libraries/`; these are candidates, not implemented Bootstrap features. See [source notes](sources.md).
 
-| Bootstrap use | Source candidate | Required adaptation |
+| Use | Source candidate | Adaptation |
 | --- | --- | --- |
-| Shell | `affectui/recreated/app-shell-frame.tsx` and CSS | Route-aware navigation, real workspace/user, stable panel state |
-| Composer | `affectui/recreated/chat-composer.tsx` | Server acknowledgments, real pending/error state, remove simulated connection/approval and synthetic dictation |
-| Home/chat reference | `affectui/recreated/screens.tsx` | Replace fixture data and local behavior with Bootstrap data contracts |
-| Task board | `affectui/recreated/blocks.tsx`, `TaskBoard` | Controlled state, stable IDs, versioned task mutations |
-| Run view | `affectui/recreated/agent-run.tsx` | Use presentation in a server-controlled view; remove simulated progress and local authorization transitions |
-| Inline approval | `affectui/recreated/approval-card.tsx` | Bind exact action revision, asynchronous decision, server expiry; disable broad Always option |
-| Review queue | `affectui/recreated/review-center.tsx` | Durable decisions, version checks, real action status; no misleading local undo |
-| Tables | `beui/vendor/components/motion/table/` | Stable `getRowId`, controlled sort/selection, server pagination and loading |
-| Tabs | `beui/vendor/components/motion/tabs.tsx` | One consistent page-tab style, route state, keyboard/mobile acceptance |
-| Compact activity | `beui/vendor/components/agents/agent-activity/` | Map waiting, error, cancelled, and paused states in addition to working/complete |
-| Clarification | `beui/vendor/components/agents/approval-card/` | Use question/options view for questions; keep authorization semantics separate |
-| App selector | `affectui/recreated/integration-picker.tsx` | Real toolkit/account availability and status |
-| Connection settings reference | `affectui/recreated/integration-settings.tsx` | Build OAuth and account lifecycle forms; existing site URL/timezone/API-key form is insufficient |
+| Shell | `affectui/recreated/app-shell-frame.tsx` | Workspace routes, persistent panels, responsive overview |
+| Composer | `affectui/recreated/chat-composer.tsx` | Real acknowledgements/context; remove simulated approval/connection and dictation |
+| Screen reference | `affectui/recreated/screens.tsx` | Replace fixtures with canonical project/resource contracts |
+| Tasks | `affectui/recreated/blocks.tsx`, TaskBoard | Stable IDs, controlled state, human assignees |
+| Runs | `affectui/recreated/agent-run.tsx` | Server-controlled progress; remove local restart/approval transitions |
+| Approval | `affectui/recreated/approval-card.tsx` | Exact revision, async decision, expiry; disable broad Always |
+| Review | `affectui/recreated/review-center.tsx` | Durable decisions; no misleading local undo |
+| Tables | `beui/vendor/components/motion/table/` | Stable row IDs, typed editing, controlled selection, pagination |
+| Tabs | `beui/vendor/components/motion/tabs.tsx` | Consistent routed properties/project tabs, keyboard/mobile behavior |
+| Activity | `beui/vendor/components/agents/agent-activity/` | Waiting, error, cancelled, paused, idle states |
+| Questions | `beui/vendor/components/agents/approval-card/` | Clarification only; authorization semantics remain separate |
+| App/account setup | `affectui/recreated/integration-picker.tsx`, `affectui/recreated/integration-settings.tsx` | Real toolkit/account lifecycle; existing generic settings form is insufficient |
 
-`affectui/vendor/illustrations/agent-team.tsx` is an illustration, not a functional team editor. The roster, role editor, permission summaries, and task assignment interfaces need product implementation.
+The agent-team illustration is not a functional team editor. AgentRun and composer demos contain automatic/local progress; callbacks alone do not establish durable authorization. No real operation may report success from a demonstration timer.
 
-The inspected AgentRun defaults to automatic demonstration progress and contains local restart/approval transitions even when used with host-driven steps. Its approval callback alone does not provide durable authorization. The composer also contains timer-driven connection/approval outcomes. Neither component may claim a real operation succeeded based on those local transitions.
+Package selected adaptations in `packages/ui` with one semantic token layer. Exclude catalogue fixtures and navigation. Record each imported file's source, pinned commit, license, attribution, assets/dependencies, and changes. Verify fonts/icons separately and retain notices. Public build must not require private t3UI access. Existing source records do not certify universal visual/API parity; this specification performs no screenshot acceptance.
 
-## 5. Component packaging and provenance
+## 7. Responsive acceptance
 
-Create a small `packages/ui` containing selected, adapted source and Bootstrap wrappers. Extract a single semantic token layer for surface, text, border, focus, status, spacing, and typography. Keep demo styles, fixtures, sample accounts, and catalogue navigation outside production bundles.
+On wide screens use navigation, a main resource surface, and an optional capture/context panel. Collapse secondary panels before narrowing useful content. Mobile uses one surface at a time, preserves drafts/selections, and provides full-screen action review. Agent status and approval footers must not cover controls.
 
-For each imported file, record source repository, path, pinned commit, license, attribution, dependency/assets, and local changes in a provenance manifest. Retain third-party notices. Verify fonts, icons, avatars, and transitive assets separately. Do not depend on the private t3UI repository during public install or build.
+Verify 320, 390, 768, 1280, and 1440 CSS-pixel widths; these are acceptance targets. Test keyboard creation/editing of projects, documents, tables, tasks, agent properties, and approvals; visible focus; dialog containment/return; readable contrast; zoom; practical touch targets; text alongside status color; and reduced motion. Announce streamed updates in manageable units.
 
-The existing source records distinguish MIT upstream files from independent recreations and do not establish universal visual/API parity. Bootstrap acceptance concerns its adapted components and actual workflows. No screenshot acceptance or parity certification was performed by this specification task.
+Essential actions cannot require page-level horizontal scrolling. Tables/code may scroll within their container. Test long names, addresses, payloads, and errors, including loading, empty, denied, disconnected, expired, failed, cancelled, and unknown outcomes.
 
-## 6. Responsive and accessible behavior
-
-On desktop, use navigation plus one main work surface. Add a context inspector when sufficient width remains. Avoid forcing navigation, task list, chat, and artifact into four narrow columns.
-
-On mobile, show one work surface at a time, preserve selection and drafts when navigating back, and present action review full-screen. Keep the approval footer reachable without obscuring content. Tables and code can scroll inside their own container; the page must not require horizontal scrolling for essential actions.
-
-Acceptance viewports: 320, 390, 768, 1280, and 1440 CSS pixels. These are test targets, not fixed device assumptions. Required behavior includes:
-
-- Complete keyboard paths for onboarding, agent setup, chat, task review, and authorization.
-- Visible focus, dialog focus containment, Escape behavior, and correct focus return.
-- Text/icon status in addition to color, readable contrast, zoom support, and practical touch targets.
-- Reduced motion that preserves the same state information.
-- Screen-reader updates in manageable units, not one announcement per streamed token.
-- Reachable long email addresses, error text, document names, and approval payloads.
-- Loading, empty, disconnected, denied, expired, failed, cancelled, and unknown-outcome states.
-
-## 7. Product UI acceptance
-
-The founder must complete the first result, recover a refreshed run, select between two same-service accounts, edit and approve a draft, stop delegated work, and resolve a failed connection on desktop and mobile. Seeded demo behavior must never activate for a real run. Screenshots accompany interaction evidence; static screenshots alone do not establish working authorization or recovery.
+Acceptance includes manual work with zero AI balance, canonical resource sharing, stale-edit recovery, explicit skill updates, editable memories, bounded agent communication, same-service account selection, approved action recovery, and hosted provisioning/wallet states on desktop and mobile. Demo behavior never activates for a real run. Screenshots accompany interaction evidence; screenshots alone do not prove execution, authorization, or accounting.
