@@ -240,12 +240,14 @@ export function AppGateway() {
                   Setup token
                   <input
                     name="setupToken"
+                    aria-label="Setup token"
+                    aria-describedby="setup-token-help"
                     type="password"
                     autoComplete="off"
                     placeholder="From your server configuration"
                     required
                   />
-                  <small>
+                  <small id="setup-token-help">
                     The deployment owner sets this token to protect first-time
                     setup.
                   </small>
