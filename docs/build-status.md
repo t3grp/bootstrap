@@ -60,6 +60,12 @@ and interleaved-revision detection with recoverable drafts.
   uses two independent pools and kills/restarts a real built worker during streaming.
   The new browser scenario covers choose agent → select sources → submit → progress
   → reload in flight → save → reload page/run receipt, plus a 320px screenshot.
+- [CI run 42168098794](https://github.com/t3grp/bootstrap/actions/runs/42168098794)
+  passed installation, TypeScript, build, all **73 tests**, and all **seven E2E
+  scenarios on their first attempts** at `acbe48ad2216052d0ed24e204267a6f5b3778a02`.
+  The worker integration ran from an isolated copy of the standalone package.
+  Screenshot review then identified a compressed mobile agent heading; the
+  responsive follow-up and its final CI evidence are recorded in the stacked PR.
 
 The stacked implementation PR records the exact final commit, run URL, counts,
 and any remaining failures. Local targeted evidence does not substitute for the
@@ -70,7 +76,7 @@ for reproducible commands and configuration.
 
 This is not a completed B1/B2 or hosted-service release. The next work includes:
 
-1. Complete the final browser/PostgreSQL CI gate and validate a container deployment separately.
+1. Validate a container deployment separately from the passing browser/PostgreSQL CI gate.
 2. Saved named table views, import, a page history/restore UI, and lazy resource loading.
 3. Expand the bounded agent path with granular grants, packaged skill versions,
    multi-turn chat, and a richer review/task workflow. These are not implied by this slice.

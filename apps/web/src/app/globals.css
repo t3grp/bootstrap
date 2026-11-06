@@ -2968,6 +2968,9 @@ summary::-webkit-details-marker {
     border-radius: 12px;
     font-size: 16px;
   }
+  .agent-profile-heading > div:nth-child(2) {
+    flex-basis: calc(100% - 57px);
+  }
   .agent-profile-heading h1 {
     font-size: 23px;
   }
