@@ -58,7 +58,7 @@ Initial reserved scope:
 ChatGPT owns the model, migrations, API contract/client, server implementation and
 shared workspace/route wiring. Request changes to shared files here; do not edit
 the database, worker, API, global CSS, manifests/lockfile or root workspace wiring
-in parallel. Avoid the open Cloudflare PR's reserved files entirely.
+in parallel. Avoid the active Cloudflare/deployment track's reserved files entirely.
 
 UI fixtures may be prepared before the C01 contract is ready. Keep them isolated
 from production behavior. Once C01 publishes its contract, consume those types and

@@ -1,12 +1,12 @@
 # Bootstrap module status and work ownership
 
-Verified: **6 November 2026**, including the subsequent D1 integration update at
-`4cca32597fc4b55a9b378af68de5d53cfe0afd50`. This is the shared coordination record
+Verified: **6 November 2026, 18:39 SGT**, after D1 integration reached
+`main@f766865e8945ee684d5196ba560ed0791eb6ff7d`. This is the shared coordination record
 requested by the owner. It separates delivered code from planned modules and
 gives each remaining task one implementation owner.
 
 **The full product is not complete.** A usable manual workspace and one bounded
-agent execution path are implemented in open PRs. Most teamwork, integrations,
+agent execution path are integrated into main. Most teamwork, integrations,
 recurring work, and commercial hosting modules remain to be built.
 
 ## Start here
@@ -27,17 +27,19 @@ that identity. **Muse Bot has not acknowledged this split or supplied an active
 branch.** This document is a published handoff and reservation, not evidence that
 the bot has read it or started. No new bot session is launched by this handoff.
 
-## 1. Verified delivery and open stack
+## 1. Verified delivery and integration
 
-All four existing PRs were open and unmerged when checked. No implementation is
-being merged or deployed by this coordination update.
+PR #4 merged into main at 18:35 SGT while this handoff was being prepared. It
+includes the earlier specification/workspace/agent history. PR #1 is marked merged;
+PRs #2 and #3 were closed after their code was integrated through #4, not separately
+merged. No implementation was merged or deployed by this coordination task.
 
 | PR | Branch / base | Verified scope and evidence |
 | --- | --- | --- |
-| [#1](https://github.com/t3grp/bootstrap/pull/1) | `docs/bootstrap-product-spec-20261106` → `main` | Specifications and independent Muse landing brief; draft |
-| [#2](https://github.com/t3grp/bootstrap/pull/2) | `feat/workspace-foundation` → specification branch | Owner setup/auth, manual workspace, pages/editor, tables/files, six agent properties; 45 tests and five E2E cases passed at `f468f81037d19d061a9f1e86072fbda0480605a1`; draft |
-| [#3](https://github.com/t3grp/bootstrap/pull/3) | `feat/agent-execution` → foundation branch | Bounded assignments, streaming, source scope, save/provenance, cancellation and recovery; 73 tests and seven E2E cases passed at `c5a6fa015bd88032cb20d455329a98eef222d3b6`; ready for review |
-| [#4](https://github.com/t3grp/bootstrap/pull/4) | `deploy/cloudflare` → `main` | Integrated #1–#3 plus D1 records, private R2 and Container runtime; head `4cca32597fc4b55a9b378af68de5d53cfe0afd50` passed final D1 CI; application not live according to its deployment handoff |
+| [#1](https://github.com/t3grp/bootstrap/pull/1) | `docs/bootstrap-product-spec-20261106` → `main` | Specifications and independent Muse landing brief; integrated, PR marked merged |
+| [#2](https://github.com/t3grp/bootstrap/pull/2) | `feat/workspace-foundation` → specification branch | Owner setup/auth, manual workspace, pages/editor, tables/files, six agent properties; initial 45 tests and five E2E cases passed at `f468f81037d19d061a9f1e86072fbda0480605a1`; integrated through #4, PR closed |
+| [#3](https://github.com/t3grp/bootstrap/pull/3) | `feat/agent-execution` → foundation branch | Bounded assignments, streaming, source scope, save/provenance, cancellation and recovery; initial 73 tests and seven E2E cases passed at `c5a6fa015bd88032cb20d455329a98eef222d3b6`; integrated through #4, PR closed |
+| [#4](https://github.com/t3grp/bootstrap/pull/4) | `deploy/cloudflare` → `main` | Merged integration of #1–#3 plus D1 records, private R2 and Container runtime; head `4cca32597fc4b55a9b378af68de5d53cfe0afd50` passed 90 tests and seven D1-backed browser cases; live acceptance still belongs to the deployment track |
 
 Evidence: [foundation CI](https://github.com/t3grp/bootstrap/actions/runs/42096480392),
 [agent CI](https://github.com/t3grp/bootstrap/actions/runs/42168818923),
@@ -45,9 +47,8 @@ Evidence: [foundation CI](https://github.com/t3grp/bootstrap/actions/runs/420964
 That earlier Cloudflare run passed 82 tests and seven E2E cases at `1a3eceb`, before
 the D1 change; the new D1 head passed
 [run 42203372717](https://github.com/t3grp/bootstrap/actions/runs/42203372717).
-PR #4 now targets `main` and
-includes the earlier stack, so do not duplicate its integration by independently
-merging or rebuilding #1–#3.
+PR #4 is now merged into `main` and includes the earlier stack. Start new product
+work from the current main after checking reservations; do not replay #1–#3.
 
 The refreshed [Cloudflare deployment record](../cloudflare-deployment.md) uses
 **D1 for records and R2 for private files**, with durable SQLite locally. PR #4
@@ -60,7 +61,7 @@ not complete B6.
 
 | Module | Current state | Remaining completion work |
 | --- | --- | --- |
-| B0 Foundation | Implemented foundation; release/live-operation gates remain | Merge/release sequencing, deployment acceptance, operational evidence |
+| B0 Foundation | Implemented and integrated; release/live-operation gates remain | Deployment acceptance, operational evidence and public release sequencing |
 | B1 Manual workspace | Useful core implemented; broader slice partial | Saved named table views, page history/restore interface, scalable loading; import belongs to the B8 portability gate |
 | B2 One useful agent | Bounded assignment acceptance implemented; broader slice partial | Pinned executable skill versions, finer resource grants, richer contextual conversation, reviewed page/table proposals and memory workflows |
 | B3 Controlled connection | Not implemented | First Composio/Notion account binding, read/write capability, exact approval, action receipt, revocation and uncertain-write reconciliation |
@@ -99,9 +100,10 @@ needs the task's acceptance evidence; merged/deployed status is recorded separat
 **Preserved reservations outside this split:**
 
 - **D01 — Existing Cloudflare/deployment track:** keep PR #4 with its current
-  contributor. Neither ChatGPT's new C01 task nor Muse Bot's UI tasks claim this
-  work. Its D1 migration actively changes database, auth, workspace and agent
-  runtime contracts. C01 must wait for that persistence handoff; do not implement
+  contributor through live acceptance and its handoff. Neither ChatGPT's new C01
+  task nor Muse Bot's UI tasks claim this work. Its merged D1 migration changed
+  database, auth, workspace and agent runtime contracts. C01 must wait for that
+  persistence handoff before schema/runtime edits; do not implement
   against the superseded PostgreSQL/PGlite model or create a competing migration
   or deployment branch.
 - **M0 — Muse Bot landing page:** retain the original Muse assignment as Muse
@@ -111,7 +113,7 @@ needs the task's acceptance evidence; merged/deployed status is recorded separat
 
 ## 3. File ownership and integration boundary
 
-Current open-PR reservations override the broad path rules below. Each activated
+Current active-track reservations override the broad path rules below. Each activated
 task must narrow its exact paths in the corresponding owner record.
 
 | Writer | Paths / responsibility |

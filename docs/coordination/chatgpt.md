@@ -6,7 +6,8 @@ Updated: 6 November 2026, after the D1 integration update and Muse Bot clarifica
 
 - Coordination/status documentation: prepared in this chat.
 - Existing completed delivery: [agent execution PR #3](https://github.com/t3grp/bootstrap/pull/3),
-  head `c5a6fa015bd88032cb20d455329a98eef222d3b6`; open, unmerged, CI passed.
+  head `c5a6fa015bd88032cb20d455329a98eef222d3b6`; CI passed; integrated into main
+  through PR #4, with PR #3 subsequently closed.
 - Next product task: **C01 — named table views, persistence and contract**.
 - State: **Reserved; blocked on the active D1 persistence handoff; not started**.
 - Implementation branch / base SHA: **not created; record before starting**.
@@ -20,8 +21,8 @@ sort and filter settings; it continues to refer to the existing canonical table.
 Deleting a view or removing an embed must not delete table rows. Existing local
 table revisions and draft/conflict behavior remain intact.
 
-PR #4 changed the database foundation to D1/local SQLite while this handoff was
-being prepared. Wait for that contributor's validated persistence contract before
+PR #4 changed the database foundation to D1/local SQLite and merged while this
+handoff was being prepared. Wait for that contributor's persistence handoff before
 editing schema or runtime files. Use its guarded atomic-batch design and required
 revision triggers; do not revive the old PostgreSQL/PGlite implementation. Record
 the exact released base and handoff here before starting C01.
