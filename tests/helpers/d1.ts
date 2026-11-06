@@ -1,6 +1,6 @@
 import { Miniflare } from "miniflare";
 import { randomUUID } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { createServer } from "node:http";
 import { once } from "node:events";
 import { handlePrivateDatabase } from "../../apps/cloudflare/database";
@@ -36,16 +36,18 @@ export async function startD1() {
   });
   const binding = await runtime.getD1Database("DB");
   try {
-    const migration = await readFile(
-      new URL("../../packages/db/migrations/0001_d1.sql", import.meta.url),
-      "utf8",
-    );
-    await binding.batch(
-      migration
-        .split("--> statement-breakpoint")
-        .filter((sql) => sql.trim())
-        .map((sql) => binding.prepare(sql)),
-    );
+    const folder = new URL("../../packages/db/migrations/", import.meta.url);
+    for (const name of (await readdir(folder))
+      .filter((name) => name.endsWith(".sql"))
+      .sort()) {
+      const migration = await readFile(new URL(name, folder), "utf8");
+      await binding.batch(
+        migration
+          .split("--> statement-breakpoint")
+          .filter((sql) => sql.trim())
+          .map((sql) => binding.prepare(sql)),
+      );
+    }
   } catch (error) {
     await runtime.dispose();
     throw error;

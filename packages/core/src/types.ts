@@ -47,6 +47,8 @@ export type Task = {
   createdAt: string;
   updatedAt: string;
 };
+export * from "./table-views";
+
 export type TableColumnType =
   "text" | "number" | "date" | "checkbox" | "select" | "url" | "file";
 export type TableColumn = {

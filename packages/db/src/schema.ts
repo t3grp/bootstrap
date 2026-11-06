@@ -17,6 +17,8 @@ import type {
   RunStatus,
   TableColumn,
   TableRow,
+  TableViewColumnBinding,
+  TableViewSettings,
 } from "@bootstrap/core";
 
 // Better Auth's core schema. No public registration or social providers are enabled.
@@ -279,6 +281,37 @@ export const businessTables = sqliteTable(
     rows: text("rows", { mode: "json" }).$type<TableRow[]>().notNull(),
   },
   (table) => [primaryKey({ columns: [table.workspaceId, table.id] })],
+);
+
+export const tableViews = sqliteTable(
+  "table_views",
+  {
+    ...resourceIdentity(),
+    tableId: text("table_id").notNull(),
+    name: text("name").notNull(),
+    settings: text("settings", { mode: "json" })
+      .$type<TableViewSettings>()
+      .notNull(),
+    columnBindings: text("column_bindings", { mode: "json" })
+      .$type<TableViewColumnBinding[]>()
+      .notNull(),
+    revision: integer("revision").notNull().default(1),
+    validatedTableRevision: integer("validated_table_revision").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.id] }),
+    foreignKey({
+      columns: [table.workspaceId, table.tableId],
+      foreignColumns: [businessTables.workspaceId, businessTables.id],
+      name: "table_views_table_workspace_fk",
+    }).onDelete("cascade"),
+    index("table_views_table_idx").on(
+      table.workspaceId,
+      table.tableId,
+      table.createdAt,
+      table.id,
+    ),
+  ],
 );
 
 export const files = sqliteTable(
