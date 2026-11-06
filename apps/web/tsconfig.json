@@ -27,7 +27,8 @@
     "src/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "../../packages/**/*.ts"
+    "../../packages/**/*.ts",
+    "../worker/src/**/*.ts"
   ],
   "exclude": ["node_modules"]
 }

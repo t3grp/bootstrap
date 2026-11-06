@@ -20,6 +20,7 @@ export type Project = {
 };
 export type Page = {
   id: Id;
+  sourceRunId?: Id | null;
   title: string;
   icon: string;
   parentId: Id | null;
@@ -197,4 +198,95 @@ export type SetupInput = {
   password: string;
   workspaceName: string;
   setupToken?: string;
+};
+
+/** A resource is selected explicitly for one assignment; references never expand scope. */
+export type AgentResource = {
+  kind: "page" | "table" | "file";
+  id: Id;
+  version: string;
+};
+export type RunSource = AgentResource & {
+  label: string;
+  citation: string;
+  sha256: string;
+};
+export type AgentConfiguration = Pick<
+  Agent,
+  "name" | "role" | "instructions" | "skills" | "memories" | "updatedAt"
+>;
+export type RunLimits = {
+  maxSteps: number;
+  maxInputTokens: number;
+  maxOutputTokens: number;
+  timeoutMs: number;
+};
+export type RunStatus =
+  | "queued"
+  | "running"
+  | "succeeded"
+  | "cancelled"
+  | "failed"
+  | "paused_budget"
+  | "reconciling";
+export type ProviderStatus = {
+  ready: boolean;
+  kind: "unconfigured" | "deterministic" | "openai-compatible";
+  model: string | null;
+  message: string;
+  limits: RunLimits;
+};
+export type AssignmentInput = {
+  operationKey: string;
+  agentId: Id;
+  prompt: string;
+  resources: AgentResource[];
+  projectId?: Id | null;
+  outputTitle: string;
+  limits?: Partial<RunLimits>;
+};
+export type RunEvent = {
+  sequence: number;
+  type: string;
+  message: string;
+  createdAt: string;
+};
+export type AgentRun = {
+  id: Id;
+  threadId: Id;
+  assignmentId: Id;
+  agentId: Id;
+  agentName: string;
+  prompt: string;
+  outputTitle: string;
+  status: RunStatus;
+  assignmentStatus:
+    | "queued"
+    | "in_progress"
+    | "needs_review"
+    | "done"
+    | "blocked"
+    | "cancelled";
+  provider: ProviderStatus["kind"];
+  model: string;
+  sources: RunSource[];
+  limits: RunLimits;
+  steps: number;
+  attempt: number;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  inputTokenUpperBound: number;
+  outputText: string;
+  errorCode: string | null;
+  errorMessage: string | null;
+  resultDocumentId: Id | null;
+  createdAt: string;
+  finishedAt: string | null;
+  messages: {
+    id: Id;
+    role: "user" | "assistant";
+    content: string;
+    createdAt: string;
+  }[];
+  events: RunEvent[];
 };

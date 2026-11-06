@@ -10,7 +10,8 @@
   "scripts": {
     "init:local": "node scripts/init-local.mjs",
     "dev": "pnpm --filter @bootstrap/web dev",
-    "build": "pnpm --filter @bootstrap/web build",
+    "build": "pnpm --filter @bootstrap/web build && node scripts/build-worker.mjs",
+    "worker": "tsx --env-file-if-exists=apps/web/.env.local apps/worker/src/index.ts",
     "start": "pnpm --filter @bootstrap/web start",
     "typecheck": "pnpm --filter @bootstrap/web exec next typegen && tsc --noEmit -p apps/web/tsconfig.json",
     "test": "vitest run",
@@ -23,7 +24,10 @@
     "@types/pg": "8.23.1",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "drizzle-orm": "0.45.4",
+    "esbuild": "0.28.2",
     "prettier": "3.9.10",
+    "tsx": "4.23.15",
     "typescript": "5.9.3",
     "vitest": "5.1.0"
   }

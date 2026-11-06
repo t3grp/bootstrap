@@ -2,6 +2,32 @@
 
 Date: 6 November 2026. Version: 0.3 draft. The product direction below follows the user's stated requirements; implementation defaults remain proposals until built and validated.
 
+## B2 bounded implementation decisions
+
+The `feat/agent-execution` slice implements one explicit assignment/result per
+thread. Agent configuration and selected source versions are snapshotted at
+admission. Existing Files/Tables bindings provide the owner-managed read ceiling;
+each assignment explicitly narrows that ceiling. No write/tools authority follows
+from a binding. Dedicated granular grants and installed skill-version records
+remain future B2 work; the current Skills/Memories fields are owner-authored notes.
+
+The first queue uses transactional run rows, workspace locks, leases, and fencing
+epochs on the existing PostgreSQL schema. This keeps the isolated PGlite path
+functional with an embedded worker. PostgreSQL runs a separate long-lived worker.
+The proposed pg-boss/outbox layer is deferred to scheduling/messaging rather than
+adding two queue implementations to a one-step slice. This does not weaken the
+durable admission or uncertain-dispatch contracts: a live dispatch with unknown
+outcome is never automatically replayed, and a completed checkpoint finalizes
+without another model call.
+
+The model interface uses pinned AI SDK 7 with an operator-configured compatible
+endpoint. There is one model step, zero tools, zero automatic SDK retries, and
+explicit input/output/time bounds. Test mode is an opt-in deterministic fixture
+with prominent labels. No paid AI request is used for development or acceptance.
+See [operation and limits](agent-execution.md) for the exact behavior and remaining
+scope. The six existing property areas, manual workspace, editor concurrency
+protections, and separate Muse landing brief are preserved.
+
 ## Confirmed product direction
 
 - Open-source business workspace for founders and solo entrepreneurs.
@@ -16,32 +42,32 @@ Date: 6 November 2026. Version: 0.3 draft. The product direction below follows t
 
 ## Proposed implementation defaults
 
-| Decision | Proposed default | Reason and consequence |
-| --- | --- | --- |
-| Initial customer | Solo founders and small knowledge businesses | Focuses on customer work, research, planning, and operations |
-| Ownership | One owner per workspace initially; one hosted account/instance per subscriber, with multiple workspaces | Business boundaries remain explicit without charging automatically for every project/workspace |
-| Workspace resources | Canonical projects, structured Documents presented as Pages, files, typed tables, and manual tasks | Users and agents work on the same information; agent profile resources are bindings |
-| Page editor | Stable-ID block schema, page tree, slash menu, versions, native export | Markdown remains interchange; whole-page optimistic concurrency is sufficient initially |
-| Linked tables | Named grid views inline or full-page, referencing canonical tables | Filters are presentation settings; grants still apply |
-| Agent team | Directly usable Growth/Research and Operations templates, custom agents, optional Chief of Staff | Coordination is a convenience, not a prerequisite |
-| Agent communication | Persistent identities, separate task threads, durable messages/deliveries, action versus notification | Work survives restart and acknowledgements do not create endless model turns |
-| Delegation | One level, three child assignments, shared message/step/time/spend limits | Bounded collaboration with one responsible task owner |
-| Skills | Declarative procedures, pinned versions, provenance and declared capability requirements | Installing instructions does not grant tools or executable code |
-| Memory | User-visible workspace and agent memories with provenance, revision, correction, and deletion | Confirmed facts remain distinguishable from working notes |
-| Tables | Typed grid, basic filter/sort/search, CSV, stable IDs, reviewed agent changes | Useful business data without a full spreadsheet/database platform |
-| First connectors | Gmail, Calendar, Notion, GitHub | Certify a small set of actions for the launch/client-delivery workflows |
-| First connected slice | Notion read and reviewed page creation | Exercises account binding, evidence, authorization, dispatch, and receipt handling |
-| Runtime | TypeScript, Next.js, AI SDK, PostgreSQL, pg-boss, separate worker | Portable core with durable execution and a modest infrastructure footprint |
-| UI language | Notion-like workspace interactions with AffectUI/BeUI components; Linear-inspired marketing composition; Bench overview ideas | Distinct public and product surfaces share Bootstrap identity |
-| Landing launch mode | Explicit concept preview and real GitHub/spec links | Muse can implement now without nonfunctional signup, waitlist, checkout, or unsupported availability claims |
-| External actions | Exact review unless specifically or narrowly pre-authorized | Authorization binds to actual account, target, content, and attachments |
-| Managed infrastructure | Per-user app/worker containers, separate database credentials and private storage, on potentially shared hosts | Fulfils an instance promise without implying dedicated hardware |
-| Hosting revenue | Recurring subscription for capacity and operations | Kept independent of AI consumption and credit balance |
-| AI purchases | Manual top-ups of defined AI usage credits, versioned model rates, visible token breakdown | Different token categories/models need not cost the same |
-| Payment/runtime boundary | Stripe for payment state; Bootstrap ledger and managed gateway for real-time reservations | Duplicate events and concurrent runs cannot mint or spend twice |
-| Model/integration credentials | Managed gateways hold platform keys; self-host uses direct operator credentials | User instances never receive platform-wide secrets |
-| Self-hosting | Complete core, BYOK, Composio configuration, local/S3 storage, demo mode | No hosted subscription or private infrastructure needed to run the public application |
-| New-code license | Apache-2.0 included in the first implementation PR, retaining component notices | Review with the implementation before adopting the release |
+| Decision                      | Proposed default                                                                                                              | Reason and consequence                                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Initial customer              | Solo founders and small knowledge businesses                                                                                  | Focuses on customer work, research, planning, and operations                                                |
+| Ownership                     | One owner per workspace initially; one hosted account/instance per subscriber, with multiple workspaces                       | Business boundaries remain explicit without charging automatically for every project/workspace              |
+| Workspace resources           | Canonical projects, structured Documents presented as Pages, files, typed tables, and manual tasks                            | Users and agents work on the same information; agent profile resources are bindings                         |
+| Page editor                   | Stable-ID block schema, page tree, slash menu, versions, native export                                                        | Markdown remains interchange; whole-page optimistic concurrency is sufficient initially                     |
+| Linked tables                 | Named grid views inline or full-page, referencing canonical tables                                                            | Filters are presentation settings; grants still apply                                                       |
+| Agent team                    | Directly usable Growth/Research and Operations templates, custom agents, optional Chief of Staff                              | Coordination is a convenience, not a prerequisite                                                           |
+| Agent communication           | Persistent identities, separate task threads, durable messages/deliveries, action versus notification                         | Work survives restart and acknowledgements do not create endless model turns                                |
+| Delegation                    | One level, three child assignments, shared message/step/time/spend limits                                                     | Bounded collaboration with one responsible task owner                                                       |
+| Skills                        | Declarative procedures, pinned versions, provenance and declared capability requirements                                      | Installing instructions does not grant tools or executable code                                             |
+| Memory                        | User-visible workspace and agent memories with provenance, revision, correction, and deletion                                 | Confirmed facts remain distinguishable from working notes                                                   |
+| Tables                        | Typed grid, basic filter/sort/search, CSV, stable IDs, reviewed agent changes                                                 | Useful business data without a full spreadsheet/database platform                                           |
+| First connectors              | Gmail, Calendar, Notion, GitHub                                                                                               | Certify a small set of actions for the launch/client-delivery workflows                                     |
+| First connected slice         | Notion read and reviewed page creation                                                                                        | Exercises account binding, evidence, authorization, dispatch, and receipt handling                          |
+| Runtime                       | TypeScript, Next.js, AI SDK, PostgreSQL, pg-boss, separate worker                                                             | Portable core with durable execution and a modest infrastructure footprint                                  |
+| UI language                   | Notion-like workspace interactions with AffectUI/BeUI components; Linear-inspired marketing composition; Bench overview ideas | Distinct public and product surfaces share Bootstrap identity                                               |
+| Landing launch mode           | Explicit concept preview and real GitHub/spec links                                                                           | Muse can implement now without nonfunctional signup, waitlist, checkout, or unsupported availability claims |
+| External actions              | Exact review unless specifically or narrowly pre-authorized                                                                   | Authorization binds to actual account, target, content, and attachments                                     |
+| Managed infrastructure        | Per-user app/worker containers, separate database credentials and private storage, on potentially shared hosts                | Fulfils an instance promise without implying dedicated hardware                                             |
+| Hosting revenue               | Recurring subscription for capacity and operations                                                                            | Kept independent of AI consumption and credit balance                                                       |
+| AI purchases                  | Manual top-ups of defined AI usage credits, versioned model rates, visible token breakdown                                    | Different token categories/models need not cost the same                                                    |
+| Payment/runtime boundary      | Stripe for payment state; Bootstrap ledger and managed gateway for real-time reservations                                     | Duplicate events and concurrent runs cannot mint or spend twice                                             |
+| Model/integration credentials | Managed gateways hold platform keys; self-host uses direct operator credentials                                               | User instances never receive platform-wide secrets                                                          |
+| Self-hosting                  | Complete core, BYOK, Composio configuration, local/S3 storage, demo mode                                                      | No hosted subscription or private infrastructure needed to run the public application                       |
+| New-code license              | Apache-2.0 included in the first implementation PR, retaining component notices                                               | Review with the implementation before adopting the release                                                  |
 
 ## Decisions to settle at their implementation gate
 

@@ -9,6 +9,7 @@
     "start": "node .next/standalone/apps/web/server.js"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.85",
     "@bootstrap/core": "workspace:*",
     "@bootstrap/db": "workspace:*",
     "@electric-sql/pglite": "0.5.15",
@@ -20,6 +21,7 @@
     "@tiptap/pm": "3.32.2",
     "@tiptap/react": "3.32.2",
     "@tiptap/starter-kit": "3.32.2",
+    "ai": "7.0.163",
     "better-auth": "1.7.17",
     "drizzle-orm": "0.45.4",
     "lucide-react": "1.68.0",

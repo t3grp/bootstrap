@@ -36,6 +36,7 @@ import { PageEditor } from "@/components/editor/page-editor";
 import { ApiError, getWorkspace } from "@/lib/api";
 import { Button, Dialog, FormError, IconButton, dateLabel } from "./ui";
 import { confirmedSaveRevision } from "./save-revisions";
+import { SavedRunReceipt } from "./agent-chat";
 
 type Mutate = (command: WorkspaceCommand) => Promise<WorkspaceSnapshot>;
 type SaveState = "saved" | "unsaved" | "saving" | "error" | "conflict";
@@ -432,6 +433,12 @@ export function PageSurface({
         </div>
       )}
       <div className="page-canvas">
+        {page.sourceRunId && (
+          <SavedRunReceipt
+            workspaceId={snapshot.workspace.id}
+            runId={page.sourceRunId}
+          />
+        )}
         {parentPage && (
           <button
             type="button"

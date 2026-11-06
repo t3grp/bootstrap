@@ -833,8 +833,9 @@ export function WorkspaceApp({
               <div className="feature-note">
                 <Sparkles size={16} />
                 <span>
-                  Agent profiles are ready to configure. Execution, chat, and
-                  connected tools are the next milestone.
+                  Configure a specialist, select their resources, and open
+                  Assignments to work together. A server-side model provider
+                  enables execution.
                 </span>
               </div>
               {snapshot.agents.length ? (
@@ -898,6 +899,13 @@ export function WorkspaceApp({
                 snapshot={snapshot}
                 mutate={mutate}
                 registerGuard={registerGuard}
+                onSavedResult={async () => {
+                  const workspaceId = snapshot.workspace.id;
+                  const next = await getWorkspace(workspaceId);
+                  if (snapshotRef.current.workspace.id === workspaceId)
+                    applySnapshot(next);
+                }}
+                onOpenPage={(id) => rootNavigate({ kind: "page", id })}
                 onDeleted={() => {
                   beforeLeave.current = null;
                   void navigate({ kind: "team" });
@@ -2246,8 +2254,8 @@ function AgentContext({
         <div className="context-planned">
           <span className="status-dot" />
           <span>
-            Profiles are available. Agent conversations and execution are coming
-            next.
+            Open a specialist to assign work with selected resources and review
+            their saved results.
           </span>
         </div>
       </div>

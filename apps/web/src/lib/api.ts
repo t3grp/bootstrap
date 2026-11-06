@@ -4,6 +4,10 @@ import type {
   SetupStatus,
   WorkspaceCommand,
   WorkspaceSnapshot,
+  AgentRun,
+  AssignmentInput,
+  ProviderStatus,
+  RunStatus,
 } from "@bootstrap/core";
 
 export class ApiError extends Error {
@@ -81,4 +85,45 @@ export async function signOut() {
     headers: { "Content-Type": "application/json" },
     body: "{}",
   });
+}
+
+export type RunListItem = {
+  id: string;
+  title: string;
+  status: RunStatus;
+  createdAt: string;
+};
+export function getAgentRuns(workspaceId: string, agentId: string) {
+  return request<{ provider: ProviderStatus; runs: RunListItem[] }>(
+    `/api/agent-runs?workspaceId=${encodeURIComponent(workspaceId)}&agentId=${encodeURIComponent(agentId)}`,
+  );
+}
+export function getAgentRun(workspaceId: string, runId: string) {
+  return request<AgentRun>(
+    `/api/agent-runs/${encodeURIComponent(runId)}?workspaceId=${encodeURIComponent(workspaceId)}`,
+  );
+}
+export function submitAssignment(workspaceId: string, input: AssignmentInput) {
+  return request<AgentRun>(
+    `/api/agent-runs?workspaceId=${encodeURIComponent(workspaceId)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    },
+  );
+}
+export function changeAgentRun(
+  workspaceId: string,
+  runId: string,
+  action: "cancel" | "save",
+) {
+  return request<AgentRun>(
+    `/api/agent-runs/${encodeURIComponent(runId)}?workspaceId=${encodeURIComponent(workspaceId)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    },
+  );
 }

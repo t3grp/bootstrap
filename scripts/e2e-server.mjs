@@ -24,6 +24,16 @@ const child = spawn(process.execPath, [server], {
       "bootstrap-local-e2e-setup-token-00000000000000000000",
     BOOTSTRAP_ALLOW_LOCAL_DATABASE: "true",
     BOOTSTRAP_DATA_DIR: data,
+    BOOTSTRAP_AGENT_WORKER: "embedded",
+    BOOTSTRAP_MODEL_PROVIDER: "deterministic",
+    BOOTSTRAP_ENABLE_TEST_PROVIDER: "true",
+    BOOTSTRAP_TEST_PROVIDER_DELAY_MS: "180",
+    BOOTSTRAP_MODEL_API_KEY: "",
+    BOOTSTRAP_MODEL_ID: "",
+    BOOTSTRAP_MODEL_BASE_URL: "",
+    BOOTSTRAP_AGENT_MAX_INPUT_TOKENS: "16000",
+    BOOTSTRAP_AGENT_MAX_OUTPUT_TOKENS: "2048",
+    BOOTSTRAP_AGENT_TIMEOUT_MS: "120000",
   },
 });
 let closing = false;

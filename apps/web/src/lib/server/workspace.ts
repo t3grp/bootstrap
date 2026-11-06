@@ -66,7 +66,7 @@ export async function requireWorkspace(
   if (!membership || membership.role !== "owner") throw notFound();
 }
 
-async function lockWorkspace(
+export async function lockWorkspace(
   tx: Transaction,
   userId: string,
   workspaceId: string,

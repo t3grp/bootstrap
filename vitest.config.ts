@@ -18,6 +18,13 @@ export default defineConfig({
     testTimeout: 30000,
     hookTimeout: 60000,
     fileParallelism: false,
-    env: { NODE_ENV: "test" },
+    env: {
+      NODE_ENV: "test",
+      BOOTSTRAP_MODEL_PROVIDER: "deterministic",
+      BOOTSTRAP_ENABLE_TEST_PROVIDER: "true",
+      BOOTSTRAP_MODEL_API_KEY: "",
+      BOOTSTRAP_MODEL_ID: "",
+      BOOTSTRAP_MODEL_BASE_URL: "",
+    },
   },
 });

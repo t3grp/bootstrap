@@ -1,7 +1,8 @@
 # Running Bootstrap
 
-This guide covers the first workspace milestone. It does not configure agent
-execution, Composio, managed provisioning, or billing.
+This guide covers the workspace and bounded agent slice. See
+[agent execution](agent-execution.md) for provider settings, limits, acceptance,
+and worker recovery. Composio, managed provisioning, and billing are not active.
 
 ## Local development
 
@@ -27,16 +28,21 @@ live in `.bootstrap/files/`. Keep one application process per local data directo
 PGlite is not the production multi-process database. `BOOTSTRAP_DATA_DIR` can move
 both to an absolute private path.
 
+The local agent worker shares that web process and database. With PostgreSQL, run
+`pnpm worker` separately using the same settings and private-file directory. No
+second process may open a PGlite directory. Missing model credentials leave the
+manual workspace usable and show an explicit assignment configuration state.
+
 ## Production configuration
 
-| Variable | Purpose |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string; required in production |
-| `BETTER_AUTH_URL` | Exact externally visible HTTPS origin |
-| `BETTER_AUTH_SECRET` | Random secret, at least 32 characters; keep stable across restarts |
-| `BOOTSTRAP_SETUP_TOKEN` | Separate random secret protecting first-owner setup |
-| `BOOTSTRAP_DATA_DIR` | Private writable storage, outside public/static assets |
-| `BOOTSTRAP_MIGRATIONS_DIR` | Optional override if migrations are packaged elsewhere |
+| Variable                   | Purpose                                                            |
+| -------------------------- | ------------------------------------------------------------------ |
+| `DATABASE_URL`             | PostgreSQL connection string; required in production               |
+| `BETTER_AUTH_URL`          | Exact externally visible HTTPS origin                              |
+| `BETTER_AUTH_SECRET`       | Random secret, at least 32 characters; keep stable across restarts |
+| `BOOTSTRAP_SETUP_TOKEN`    | Separate random secret protecting first-owner setup                |
+| `BOOTSTRAP_DATA_DIR`       | Private writable storage, outside public/static assets             |
+| `BOOTSTRAP_MIGRATIONS_DIR` | Optional override if migrations are packaged elsewhere             |
 
 Generate each secret separately, for example:
 
@@ -56,7 +62,8 @@ verification delivery, and an email-based password-recovery flow are not present
 ## Containers
 
 `Dockerfile` builds a standalone Node application. `compose.yaml` supplies a
-PostgreSQL service and separate persistent volumes for the database and uploads.
+PostgreSQL service, separate web/agent-worker services, and persistent volumes for
+the database and uploads. Both application services use the same provider settings.
 Create a private root `.env` containing actual values:
 
 ```dotenv

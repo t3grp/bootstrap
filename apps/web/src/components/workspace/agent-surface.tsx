@@ -24,6 +24,7 @@ import {
   Tabs,
   initials,
 } from "./ui";
+import { AgentChat } from "./agent-chat";
 
 const tabs = [
   "Instructions",
@@ -32,6 +33,7 @@ const tabs = [
   "Memories",
   "Files",
   "Tables",
+  "Assignments",
 ] as const;
 type Tab = (typeof tabs)[number];
 type Mutate = (command: WorkspaceCommand) => Promise<WorkspaceSnapshot>;
@@ -42,12 +44,16 @@ export function AgentSurface({
   mutate,
   registerGuard,
   onDeleted,
+  onSavedResult,
+  onOpenPage,
 }: {
   agent: Agent;
   snapshot: WorkspaceSnapshot;
   mutate: Mutate;
   registerGuard?(guard: (() => Promise<boolean>) | null): void;
   onDeleted?(): void;
+  onSavedResult(): Promise<void>;
+  onOpenPage(id: string): void;
 }) {
   const [tab, setTab] = useState<Tab>("Instructions");
   const [draft, setDraft] = useState(agent);
@@ -57,6 +63,10 @@ export function AgentSurface({
   const draftRef = useRef(draft);
   const dirtyRef = useRef(false);
   const saving = useRef<Promise<boolean> | null>(null);
+  useEffect(() => {
+    const params = new URL(window.location.href).searchParams;
+    if (params.has("chat") || params.has("run")) setTab("Assignments");
+  }, []);
   function update(patch: AgentPatch) {
     const next = { ...draftRef.current, ...patch };
     draftRef.current = next;
@@ -173,18 +183,44 @@ export function AgentSurface({
       <div className="agent-availability">
         <Sparkles size={17} />
         <p>
-          <strong>A place for your agent’s working context.</strong> Configure
-          their role and resources now. Chat, scheduled runs, and connected
-          tools are coming in the next build.
+          <strong>A place for your agent’s working context.</strong> Save their
+          instructions and resources, then open Assignments to work together.
+          Scheduled runs and connected tools are not active.
         </p>
       </div>
       <Tabs<Tab>
         items={tabs}
         active={tab}
-        onChange={setTab}
+        onChange={(next) => {
+          if (next === "Assignments") {
+            void save().then((saved) => {
+              if (saved) {
+                const url = new URL(window.location.href);
+                url.searchParams.set("chat", "1");
+                window.history.replaceState(window.history.state, "", url);
+                setTab(next);
+              }
+            });
+          } else {
+            const url = new URL(window.location.href);
+            url.searchParams.delete("chat");
+            url.searchParams.delete("run");
+            window.history.replaceState(window.history.state, "", url);
+            setTab(next);
+          }
+        }}
         label="Agent properties"
       />
       <div className="agent-property-panel" role="tabpanel" aria-label={tab}>
+        {tab === "Assignments" && (
+          <AgentChat
+            agent={draft}
+            snapshot={snapshot}
+            beforeSubmit={save}
+            onSaved={onSavedResult}
+            onOpenPage={onOpenPage}
+          />
+        )}
         {tab === "Instructions" && (
           <div className="form-layout form-layout-inline">
             <div className="form-columns">
@@ -269,8 +305,9 @@ export function AgentSurface({
             <div className="property-intro">
               <h2>Pages and files</h2>
               <p>
-                Choose the workspace resources to bind to this agent. Originals
-                remain in your workspace.
+                Bind the pages and files this agent may read. Each assignment
+                selects a subset; saving its removal revokes future access.
+                Originals remain in your workspace.
               </p>
             </div>
             {snapshot.pages.filter((page) => !page.trashedAt).length === 0 &&
@@ -319,8 +356,9 @@ export function AgentSurface({
             <div className="property-intro">
               <h2>Structured information</h2>
               <p>
-                Bind canonical workspace tables. Changes to a table remain
-                visible wherever it is referenced.
+                Bind the workspace tables this agent may read. Each assignment
+                selects a subset. Changes remain visible wherever a table is
+                referenced.
               </p>
             </div>
             {snapshot.tables.length === 0 ? (
@@ -346,35 +384,37 @@ export function AgentSurface({
           </div>
         )}
       </div>
-      <div className="agent-save-bar">
-        <Button
-          variant="quiet"
-          className="danger-text"
-          disabled={busy}
-          onClick={() => void remove()}
-        >
-          <Trash2 size={14} />
-          Delete agent
-        </Button>
-        <div>
-          <FormError message={error} />
-          <span className="muted">
-            {busy
-              ? "Saving configuration…"
-              : dirty
-                ? "You have unsaved changes"
-                : "Configuration saved"}
-          </span>
+      {tab !== "Assignments" && (
+        <div className="agent-save-bar">
+          <Button
+            variant="quiet"
+            className="danger-text"
+            disabled={busy}
+            onClick={() => void remove()}
+          >
+            <Trash2 size={14} />
+            Delete agent
+          </Button>
+          <div>
+            <FormError message={error} />
+            <span className="muted">
+              {busy
+                ? "Saving configuration…"
+                : dirty
+                  ? "You have unsaved changes"
+                  : "Configuration saved"}
+            </span>
+          </div>
+          <Button
+            variant="primary"
+            disabled={!dirty || busy || !draft.name.trim()}
+            onClick={() => void save()}
+          >
+            <Save size={15} />
+            {busy ? "Saving…" : "Save agent"}
+          </Button>
         </div>
-        <Button
-          variant="primary"
-          disabled={!dirty || busy || !draft.name.trim()}
-          onClick={() => void save()}
-        >
-          <Save size={15} />
-          {busy ? "Saving…" : "Save agent"}
-        </Button>
-      </div>
+      )}
     </div>
   );
 }

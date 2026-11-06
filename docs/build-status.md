@@ -1,61 +1,79 @@
-# Workspace foundation build
+# Workspace and bounded agent build
 
-Date: 6 November 2026. Scope: B0 and a useful first portion of B1, with agent
-profile configuration prepared ahead of B2. The full product specification remains
-the target; this document describes what the code actually does.
+Date: 6 November 2026. Scope: the existing B0/B1 workspace plus one bounded B2
+assignment path. The full product specification remains the target; this document
+describes the implemented behavior.
 
 ## Delivered
 
-| Area | Current implementation |
-| --- | --- |
-| App | TypeScript/pnpm workspace, Next.js App Router, shared contracts, production standalone bundle |
-| Owner access | Better Auth database sessions, token-protected atomic owner bootstrap, closed signup, same-origin writes |
-| Persistence | Drizzle schema/migration, production PostgreSQL adapter, persistent single-process local PGlite |
-| Workspace | Multiple owner workspaces, Everything/Today, projects, tasks, notes, scratchpads |
-| Pages | Stable-ID blocks, nested tree, favorites, safe moves, autosave, immutable revisions, conflicts, exact subtree trash/restore |
-| Editor | Tiptap community editor, slash menu, inline formatting, list/checklist, callout, code, keyboard block actions, typed references |
-| Tables | Typed canonical rows/properties, edits, row selection, search/sort, inline/full-page presentation, optimistic revisions |
-| Files | Private bounded uploads, authenticated attachment downloads, logical revocation and exact storage cleanup |
-| Agent profiles | Instructions, skills/routine plans, memory notes, canonical page/file/table bindings; no execution |
-| Export | Native current-resource JSON, page Markdown, table CSV; no file archive or import |
-| Design | AffectUI-inspired original shell, licensed BeUI selection primitive, Inter/Lucide notices, responsive UI code |
-| Operations | Container/Compose recipe, health endpoint, checked-in CI and setup scripts |
+| Area           | Current implementation                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| App            | TypeScript/pnpm workspace, Next.js App Router, shared contracts, production standalone bundle                                   |
+| Owner access   | Better Auth database sessions, token-protected atomic owner bootstrap, closed signup, same-origin writes                        |
+| Persistence    | Drizzle schema/migration, production PostgreSQL adapter, persistent single-process local PGlite                                 |
+| Workspace      | Multiple owner workspaces, Everything/Today, projects, tasks, notes, scratchpads                                                |
+| Pages          | Stable-ID blocks, nested tree, favorites, safe moves, autosave, immutable revisions, conflicts, exact subtree trash/restore     |
+| Editor         | Tiptap community editor, slash menu, inline formatting, list/checklist, callout, code, keyboard block actions, typed references |
+| Tables         | Typed canonical rows/properties, edits, row selection, search/sort, inline/full-page presentation, optimistic revisions         |
+| Files          | Private bounded uploads, authenticated attachment downloads, logical revocation and exact storage cleanup                       |
+| Agent profiles | Instructions, skill/routine notes, memories, and explicit page/file/table read bindings                                         |
+| Assignments    | Persisted threads, messages, assignments, runs, events, pinned context, and streamed progress                                   |
+| Execution      | One bounded model step, deterministic and server-side compatible providers, cancellation, fenced leases, restart recovery       |
+| Results        | Owner-reviewed new page, idempotent save, source snapshots, immutable run receipt and history                                   |
+| Export         | Native current-resource JSON, page Markdown, table CSV; no file archive or import                                               |
+| Design         | AffectUI-inspired original shell, licensed BeUI selection primitive, Inter/Lucide notices, responsive UI code                   |
+| Operations     | Container/Compose recipe, health endpoint, checked-in CI and setup scripts                                                      |
 
 ## Verification evidence
 
-- TypeScript check passed.
-- Optimized production standalone build passed without requiring AI or integration credentials.
-- 14 domain tests passed: owner initialization race, secret validation, workspace
-  isolation, private file scope, durable disk reopen, stale and simultaneous page
-  saves, parent-cycle races, subtree restoration, unavailable references, typed
-  table rollback, stable resource references, unsafe editor data, and export safety.
-- 26 additional tests passed against the installed editor schema and real
-  ProseMirror transactions: valid block defaults, invalid structures, stable IDs,
-  block movement/duplication/deletion, selection preservation across JSONB save
-  acknowledgements, explicit revision replacement, and typed cell parsing.
-- Five persistence regressions passed against the database: rapid cell edits
-  across stale renders, genuine concurrent conflicts, workspace-scoped
-  acknowledgements, and interleaved page/table writes between commit and response.
-- The live HTTP end-to-end scenario passed against the production standalone
-  bundle: setup/sign-in, scoped resource writes, stale revisions, same-origin
-  checks, private upload/download, export, and closed registration.
-- Five end-to-end scenarios are checked in: owner/workspace flow, HTTP access guards,
-  mobile layout, keyboard blocks/stable IDs, and typed/linked-table behavior.
-- Local browser execution is blocked before page navigation: the environment
-  denies Chromium's process singleton socket. The Playwright browser download also
-  returned an invalid archive. Browser acceptance is run in GitHub Actions against
-  the production bundle. The [implementation PR checks](https://github.com/t3grp/bootstrap/pull/2/checks)
-  record the current result; a completed successful check is required before
-  treating the five end-to-end scenarios as verified.
+### Preserved foundation
+
+The branch was started from `f468f81037d19d061a9f1e86072fbda0480605a1`, still the
+open PR #2 head when work began. Its [CI run 42096480392](https://github.com/t3grp/bootstrap/actions/runs/42096480392)
+passed frozen installation, TypeScript, production build, 45 unit/domain/editor/
+persistence tests, and all five end-to-end scenarios on their first attempts.
+
+Those tests and the original fixes remain: ProseMirror structural equality,
+page/agent navigation flushes, acknowledged table revisions across stale renders,
+and interleaved-revision detection with recoverable drafts.
+
+### Agent slice
+
+- **26 focused tests passed** across `agent-execution.test.ts` and
+  `agent-provider.test.ts`: scoped/idempotent admission, exact selected context,
+  page/table/private-file sources, config snapshots, revoked bindings/memories/
+  membership, cancellation, time/token/step limits, concurrent saves, source
+  dependency checks, stale lease fencing, ambiguous live dispatch, and durable
+  close/reopen checkpoint recovery.
+- The installed AI SDK 7 adapter was exercised through a mocked HTTP transport,
+  including credentials, output caps, usage, redirect refusal, and zero retries.
+  **No paid or live AI request was made.**
+- The production standalone web and separate worker bundle built successfully.
+- The focused **HTTP end-to-end scenario passed** against that production bundle:
+  authentication/origin/resource/SSE boundaries, duplicate admission, cancellation,
+  output limits, and event-cursor replay.
+- Local Chromium cannot start because this environment denies its process-singleton
+  socket. This was observed before navigation; it is not a browser acceptance pass.
+  Browser acceptance and screenshots run in GitHub Actions.
+- Final CI includes the existing 45 regressions, the 26 new focused checks, two
+  PostgreSQL integration scenarios, and all seven end-to-end scenarios. PostgreSQL
+  uses two independent pools and kills/restarts a real built worker during streaming.
+  The new browser scenario covers choose agent → select sources → submit → progress
+  → reload in flight → save → reload page/run receipt, plus a 320px screenshot.
+
+The stacked implementation PR records the exact final commit, run URL, counts,
+and any remaining failures. Local targeted evidence does not substitute for the
+required final CI result. See [agent operation and acceptance](agent-execution.md)
+for reproducible commands and configuration.
 
 ## Remaining milestone work
 
 This is not a completed B1/B2 or hosted-service release. The next work includes:
 
-1. Finish browser acceptance and validate the PostgreSQL/container deployment.
+1. Complete the final browser/PostgreSQL CI gate and validate a container deployment separately.
 2. Saved named table views, import, a page history/restore UI, and lazy resource loading.
-3. One bounded agent runtime: persisted tasks/threads/runs, streaming contextual
-   chat, explicit grants, durable worker execution and recovery.
+3. Expand the bounded agent path with granular grants, packaged skill versions,
+   multi-turn chat, and a richer review/task workflow. These are not implied by this slice.
 4. The first Composio connection with verified identity, scoped actions, approval,
    idempotent execution, and receipts.
 5. Agent-to-agent communication, scheduled routines, and shared spending limits.

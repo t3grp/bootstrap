@@ -2,13 +2,13 @@
 
 Bootstrap is an open-source business workspace where founders and solo entrepreneurs organize projects, pages, tables, files, and tasks, with a configurable team of agents built around their work.
 
-The user remains at the center. They can work manually, ask an agent for help on selected resources, or assign a bounded task to several specialists. Each agent has instructions, skills, routines, memories, and access to selected files and tables. Work and results stay in the user's workspace.
+The user remains at the center. They can work manually or assign a bounded task to one specialist using explicitly selected resources. Each agent has instructions, skills, routines, memories, and access to selected files and tables. Work and results stay in the user's workspace. Collaboration among several agents is a later slice.
 
 Bootstrap will support two deployment paths: a complete self-hosted open-source application using the operator's credentials, and a managed subscription that provisions one application instance per subscriber. Hosted AI usage is funded separately through prepaid top-ups.
 
 ## Project status
 
-**First application milestone — 6 November 2026.** The repository now contains a runnable Next.js application, owner authentication, database migrations, and a persistent manual workspace. Agent profiles are configurable; live agent execution, Composio connections, subscriptions, and AI credits remain subsequent milestones. This is an early build, not the complete release described in the specifications.
+**Assisted workspace slice — 6 November 2026.** The working manual workspace now includes durable single-agent assignments, explicit source selection, streamed progress, cancellation, bounded execution, saved result pages, and restart recovery. A deterministic test provider needs no AI account; an optional server-side AI SDK adapter supports operator-configured OpenAI-compatible models. Composio, delegation, schedules, subscriptions, and AI credits remain subsequent milestones. This is an early build, not the complete release described in the specifications.
 
 ## Run locally
 
@@ -18,7 +18,7 @@ Use Node.js 22.16 or later (tested with Node.js 24) and pnpm 11.25.0.
 git clone https://github.com/t3grp/bootstrap.git
 cd bootstrap
 # Until the implementation PR is merged:
-git switch feat/workspace-foundation
+git switch feat/agent-execution
 pnpm install --frozen-lockfile
 pnpm init:local
 pnpm dev
@@ -45,7 +45,12 @@ subscription is needed for manual work. Production uses PostgreSQL.
   canonical records embedded inside pages.
 - Private file upload/download and page/file/table references.
 - Agent profiles with Instructions, Skills, Routines, Memories, Files, and Tables.
-  Skills and routines are editable plans at this stage; they do not execute.
+  Skills are owner-authored procedure notes included in context; routines remain plans.
+- Explicit single-agent assignments with pinned source/configuration snapshots,
+  persisted threads/messages/runs/events, reconnectable progress, and run receipts.
+- Review and save a completed result as a new page, preserving the selected originals.
+- Server-side model configuration, a clearly labeled deterministic provider, step/token/time
+  limits, cancellation, fenced worker leases, and safe interrupted-run recovery.
 - Native JSON and Markdown page export. Workspace JSON exports current resource
   versions and file metadata; download original uploads separately.
 
@@ -69,22 +74,34 @@ not connect to an inherited `DATABASE_URL`. See [build status](docs/build-status
 for evidence and remaining gates, and [self-hosting](docs/self-hosting.md) for
 PostgreSQL, private storage, and container setup.
 
+To exercise assignments without making AI requests, add these settings to
+`apps/web/.env.local`, restart `pnpm dev`, save an agent’s instructions and Files/Tables
+bindings, then open **Assignments**:
+
+```dotenv
+BOOTSTRAP_MODEL_PROVIDER=deterministic
+BOOTSTRAP_ENABLE_TEST_PROVIDER=true
+```
+
+See [agent execution](docs/agent-execution.md) for the complete acceptance flow,
+live-provider configuration, separate PostgreSQL worker, recovery rules, and limits.
+
 ## Product specifications
 
 The documents below describe the intended release beyond this first working slice.
 
-| Document | Purpose |
-| --- | --- |
-| [Product specification](docs/product-spec.md) | Audience, scope, workflows, functional requirements, success measures |
-| [Technical design](docs/technical-design.md) | Runtime, Composio boundary, persistence, APIs, recovery, deployment |
-| [Agent architecture](docs/agent-architecture.md) | Persistent agents, six resource areas, durable communication, task ownership, delegation |
-| [Hosted service](docs/hosted-service.md) | Subscription, one instance per subscriber, provisioning, AI-credit ledger, recovery |
-| [Interface and design system](docs/ux-design.md) | Page/block workspace, interaction states, AffectUI/BeUI adoption, accessibility |
+| Document                                                | Purpose                                                                                               |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| [Product specification](docs/product-spec.md)           | Audience, scope, workflows, functional requirements, success measures                                 |
+| [Technical design](docs/technical-design.md)            | Runtime, Composio boundary, persistence, APIs, recovery, deployment                                   |
+| [Agent architecture](docs/agent-architecture.md)        | Persistent agents, six resource areas, durable communication, task ownership, delegation              |
+| [Hosted service](docs/hosted-service.md)                | Subscription, one instance per subscriber, provisioning, AI-credit ledger, recovery                   |
+| [Interface and design system](docs/ux-design.md)        | Page/block workspace, interaction states, AffectUI/BeUI adoption, accessibility                       |
 | [Landing-page specification](docs/landing-page-spec.md) | Linear-inspired visual brief, complete copy, product-preview fixtures, CTA map, responsive acceptance |
-| [Muse handoff](docs/muse-handoff.md) | Ready-to-use implementation brief for the landing page |
-| [Implementation plan](docs/implementation-plan.md) | Ordered build slices, acceptance scenarios, release gates |
-| [Decision register](docs/decisions.md) | Proposed defaults, trade-offs, decisions needed before release |
-| [Source notes](docs/sources.md) | Documentation and repository observations behind this proposal |
+| [Muse handoff](docs/muse-handoff.md)                    | Ready-to-use implementation brief for the landing page                                                |
+| [Implementation plan](docs/implementation-plan.md)      | Ordered build slices, acceptance scenarios, release gates                                             |
+| [Decision register](docs/decisions.md)                  | Proposed defaults, trade-offs, decisions needed before release                                        |
+| [Source notes](docs/sources.md)                         | Documentation and repository observations behind this proposal                                        |
 
 ## Proposed first release
 
@@ -99,7 +116,7 @@ The documents below describe the intended release beyond this first working slic
 - Managed subscription checkout, idempotent per-user instance provisioning, separate AI-credit purchases, and measured usage.
 - AffectUI as the primary interaction language, supplemented by selected BeUI components.
 
-Self-hosted application code will still require configured model providers and Composio for live connected-service workflows. A clearly labeled demo mode is planned for contributors who have not configured external services.
+Live AI requires an explicitly configured model provider. The clearly labeled deterministic provider exercises the assignment flow without AI requests. Composio and connected-service workflows are not implemented in this slice.
 
 ## Open-source direction
 
@@ -110,4 +127,4 @@ with the implementation PR before adopting this first release.
 
 Openbot is an architectural reference for persistent agents and messaging. The inspected upstream uses PolyForm Noncommercial 1.0.0; Bootstrap's commercial-capable implementation will be original, without copying that source. See [source notes](docs/sources.md) for the pinned reference and the design-system provenance.
 
-The first implementation milestone is a working workspace: create a project home page and subpage, write with blocks, maintain an inline table, attach a file, and manage personal tasks without AI. The next slice adds one configured agent that uses selected resources, produces a saved result, and recovers its run after a worker restart. Bounded teamwork, connected actions, routines, and hosted billing follow as explicit launch gates.
+The workspace foundation remains available without AI. This slice adds one configured agent using selected resources, a saved result, and durable recovery. Bounded teamwork, connected actions, routines, and hosted billing follow as explicit launch gates.
