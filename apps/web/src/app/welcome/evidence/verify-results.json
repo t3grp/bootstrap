@@ -1,0 +1,181 @@
+{
+  "checks": [
+    {
+      "name": "no page-level horizontal overflow at 1440px",
+      "ok": true,
+      "detail": "scrollWidth=1440 innerWidth=1440"
+    },
+    {
+      "name": "page load under 5s (local)",
+      "ok": true,
+      "detail": "1000ms"
+    },
+    {
+      "name": "concept labels present at 1440px",
+      "ok": true,
+      "detail": "Concept preview · Demo data"
+    },
+    {
+      "name": "hero headline visible at 1440px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page-level horizontal overflow at 1280px",
+      "ok": true,
+      "detail": "scrollWidth=1280 innerWidth=1280"
+    },
+    {
+      "name": "concept labels present at 1280px",
+      "ok": true,
+      "detail": "Concept preview · Demo data"
+    },
+    {
+      "name": "hero headline visible at 1280px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page-level horizontal overflow at 768px",
+      "ok": true,
+      "detail": "scrollWidth=768 innerWidth=768"
+    },
+    {
+      "name": "concept labels present at 768px",
+      "ok": true,
+      "detail": "Concept preview · Demo data"
+    },
+    {
+      "name": "hero headline visible at 768px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page-level horizontal overflow at 390px",
+      "ok": true,
+      "detail": "scrollWidth=390 innerWidth=390"
+    },
+    {
+      "name": "concept labels present at 390px",
+      "ok": true,
+      "detail": "Concept preview · Demo data"
+    },
+    {
+      "name": "hero headline visible at 390px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "no page-level horizontal overflow at 320px",
+      "ok": true,
+      "detail": "scrollWidth=320 innerWidth=320"
+    },
+    {
+      "name": "concept labels present at 320px",
+      "ok": true,
+      "detail": "Concept preview · Demo data"
+    },
+    {
+      "name": "hero headline visible at 320px",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "tabs switch to Routines panel",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "tabs arrow-key moves to Memories",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "FAQ expands",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "review draft dialog opens",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dialog labelled as example result",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "dialog closes on Escape",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "focus returns to Review draft button",
+      "ok": true,
+      "detail": "Review draft"
+    },
+    {
+      "name": "row selection updates attached count",
+      "ok": true,
+      "detail": "Customer shortlist: 2 selected rows → Customer shortlist: 3 selected rows"
+    },
+    {
+      "name": "reset restores fixture",
+      "ok": true,
+      "detail": "Customer shortlist: 2 selected rows"
+    },
+    {
+      "name": "nav link scrolls to Hosting",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "external link resolves: https://github.com/t3grp/bootstrap",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "external link resolves: https://github.com/t3grp/bootstrap/blob/main/docs/hosted-service.md#1-product-and-ownership-contract",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "external link resolves: https://github.com/t3grp/bootstrap/blob/main/docs/hosted-service.md",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "external link resolves: https://github.com/t3grp/bootstrap/blob/main/docs/product-spec.md",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "external link resolves: https://github.com/t3grp/bootstrap/blob/main/docs/implementation-plan.md",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "name": "no signup/login/waitlist/checkout copy",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile menu opens",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mobile menu closes on Escape",
+      "ok": true,
+      "detail": ""
+    }
+  ],
+  "screenshots": [
+    "page-1440.png",
+    "page-1280.png",
+    "page-768.png",
+    "page-390.png",
+    "page-320.png"
+  ]
+}
