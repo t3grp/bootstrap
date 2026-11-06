@@ -1,12 +1,13 @@
 # Running Bootstrap
 
-This guide covers the workspace and bounded agent slice. See
-[agent execution](agent-execution.md) for provider settings, limits, acceptance,
-and worker recovery. Composio, managed provisioning, and billing are not active.
+Bootstrap's hosted target uses Cloudflare D1 and private R2. See
+[Cloudflare deployment](cloudflare-deployment.md) for that setup. Local development
+and self-hosted Docker use SQLite with the same schema and atomic write rules.
+Composio, subscriptions, recurring work, and managed provisioning are later milestones.
 
 ## Local development
 
-Install Node.js 22.16+ and pnpm 11.25.0. From the repository root:
+Use Node.js 24 and pnpm 11.25.0:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -14,122 +15,94 @@ pnpm init:local
 pnpm dev
 ```
 
-Open `http://localhost:3000` and create the owner using the setup token printed by
-the initializer. The token and a separate random session secret are saved in
-`apps/web/.env.local`, which is ignored by git. `pnpm init:local` never overwrites
-an existing file. Copy `.env.example` instead if you prefer manual configuration;
-the placeholder secrets must be replaced before setup can succeed.
+Open `http://localhost:3000` and create the owner with the setup token printed by
+the initializer. The token and separate session secret are saved in the ignored
+`apps/web/.env.local`. Initialization never overwrites an existing file. Use the
+exact configured origin; `localhost` and `127.0.0.1` are different origins.
 
-Use the exact configured origin. A `localhost` configuration and a browser opened
-at `127.0.0.1` are different origins; write requests are rejected if they differ.
-
-Local PGlite stores PostgreSQL data under `.bootstrap/postgres/`. Private uploads
-live in `.bootstrap/files/`. Keep one application process per local data directory;
-PGlite is not the production multi-process database. `BOOTSTRAP_DATA_DIR` can move
-both to an absolute private path.
-
-The local agent worker shares that web process and database. With PostgreSQL, run
-`pnpm worker` separately using the same settings and private-file directory. No
-second process may open a PGlite directory. Missing model credentials leave the
-manual workspace usable and show an explicit assignment configuration state.
+SQLite persists in `.bootstrap/workspace.sqlite`; uploads live in
+`.bootstrap/files/`. `BOOTSTRAP_DATA_DIR` moves both to an absolute private path.
+The local agent worker runs inside the web process by default. An external worker
+can share the same SQLite directory on the same host; do not place SQLite on a
+network filesystem. Model credentials are optional for manual workspace use.
 
 ## Production configuration
 
-| Variable                   | Purpose                                                            |
-| -------------------------- | ------------------------------------------------------------------ |
-| `DATABASE_URL`             | PostgreSQL connection string; required in production               |
-| `BETTER_AUTH_URL`          | Exact externally visible HTTPS origin                              |
-| `BETTER_AUTH_SECRET`       | Random secret, at least 32 characters; keep stable across restarts |
-| `BOOTSTRAP_SETUP_TOKEN`    | Separate random secret protecting first-owner setup                |
-| `BOOTSTRAP_DATA_DIR`       | Private writable storage, outside public/static assets             |
-| `BOOTSTRAP_MIGRATIONS_DIR` | Optional override if migrations are packaged elsewhere             |
+| Variable                         | Purpose                                                 |
+| -------------------------------- | ------------------------------------------------------- |
+| `BETTER_AUTH_URL`                | Exact externally visible HTTPS origin                   |
+| `BETTER_AUTH_SECRET`             | Stable random session secret, at least 32 characters    |
+| `BOOTSTRAP_SETUP_TOKEN`          | Separate random first-owner setup token                 |
+| `BOOTSTRAP_DATA_DIR`             | Private persistent storage outside public/static assets |
+| `BOOTSTRAP_ALLOW_LOCAL_DATABASE` | Set `true` only with a durable SQLite volume            |
+| `BOOTSTRAP_AGENT_WORKER`         | `external` for a separate worker; otherwise `embedded`  |
+| `BOOTSTRAP_MIGRATIONS_DIR`       | Optional packaged migration directory override          |
 
-Generate each secret separately, for example:
+Generate independent secrets, for example with
+`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+SQLite migrations run under a short exclusive database transaction at startup.
+Cloudflare D1 migrations run separately at deployment, never on container startup.
 
-```sh
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+The first owner is claimed atomically and public signup stays disabled. This
+version supports one owner with multiple workspaces. Invitations, delivery of
+email verification, and email password recovery are not implemented.
 
-Use a dedicated database/user. Migrations run during database initialization under
-a PostgreSQL advisory lock. The application must have migration permissions at
-startup in this milestone. Configure PostgreSQL TLS according to your database
-provider; the application does not disable certificate verification.
+## Docker Compose
 
-The first owner is claimed atomically. Public signup remains disabled afterward.
-This version has one human owner with multiple workspaces; invitations, email
-verification delivery, and an email-based password-recovery flow are not present.
-
-## Containers
-
-`Dockerfile` builds a standalone Node application. `compose.yaml` supplies a
-PostgreSQL service, separate web/agent-worker services, and persistent volumes for
-the database and uploads. Both application services use the same provider settings.
-Create a private root `.env` containing actual values:
+`compose.yaml` runs separate web and agent-worker services with one shared local
+volume for SQLite and private files. Put real values in a private root `.env`:
 
 ```dotenv
-POSTGRES_PASSWORD=generated-hex-password
 BETTER_AUTH_SECRET=generated-session-secret
-BOOTSTRAP_SETUP_TOKEN=generated-setup-token
+BOOTSTRAP_SETUP_TOKEN=generated-separate-setup-token
 BETTER_AUTH_URL=http://localhost:3000
 ```
 
-The names above illustrate required fields; use independently generated random
-values, not these strings. Hexadecimal values keep the example database URL safe
-from reserved URL characters.
-
-```sh
-docker compose up --build -d
-```
-
-The default port binds only `127.0.0.1:3000`. For a remote installation, place an
-HTTPS reverse proxy in front of it and set `BETTER_AUTH_URL` to that HTTPS origin.
-Uploads are served only through authenticated API requests as attachments. Never
-publish the data volume through a static file server.
-
-`GET /api/health` verifies database availability and returns a minimal status.
-The Docker image runs as the `node` user. Build tracing excludes local data, test
-output, and environment files. Runtime configuration is injected separately.
-
-The container recipe is provided for the next deployment validation. A Docker
-daemon and a separate PostgreSQL server were not available in the initial build
-environment; the production standalone Node bundle and PGlite adapter are tested
-separately. Consult current CI/build evidence before treating a deployment as ready.
+Replace the illustrative values, then run `docker compose up --build -d`.
+The port binds to `127.0.0.1:3000`. Put an HTTPS reverse proxy in front of remote
+installations and configure its exact origin. The image runs as the `node` user.
+`GET /api/health` checks the database schema without exposing records or credentials.
+Never serve the data volume as static files.
 
 ## Data preservation
 
-Back up PostgreSQL and the private file volume together, using a coordinated
-snapshot or a paused writer. Restoring only one can leave missing file bytes or
-orphaned blobs. Keep the authentication secret in your secret manager. Test a
-restore into a separate instance before relying on a backup procedure.
+Back up the SQLite database using SQLite's backup API, or stop both writers before
+copying the complete data volume, including its WAL. Copy private uploads with the
+same snapshot. Preserve authentication secrets separately and test restoration to
+an isolated instance. Cloudflare deployments instead back up D1 and R2 together.
 
-Native JSON exports contain current pages, table rows, tasks, projects, agent
-configuration, and file metadata. They exclude file bytes, historical page
-versions, accounts, and sessions. They are not database backups. Import/restore
-from this interchange format is a later workspace feature.
+Workspace JSON exports include current pages, tables, tasks, projects, agent
+configuration, and file metadata. They omit file bytes, historical versions,
+accounts, and sessions. They do not replace database backups.
+
+Earlier PostgreSQL/PGlite installations need an explicit data export and schema
+conversion before upgrading. PostgreSQL migration files remain archived in
+`packages/db/legacy-postgres`. No automatic destructive migration is performed.
 
 ## Initial bounds
 
-- 10 MB per uploaded file.
-- 2 MB, 2,000 nodes, and 16 nesting levels per page document.
-- 50 properties and 500 rows per table, with a 4 MB serialized table limit.
+- 10 MB per upload, stored outside SQL.
+- 1 MB of page content, 2,000 nodes, and 16 nesting levels.
+- 50 properties and 500 rows per table, within 1 MB of serialized columns/rows.
+- 1 MB per agent configuration, including instructions and all saved notes.
+- 4 MB of existing page content in a single subtree operation.
 - 500 resources of each kind per workspace and 25 workspaces per instance.
 
-These are validation bounds, not a benchmarked production capacity promise.
-Workspace snapshots currently load current page bodies and table records together;
-paginated/lazy resource loading must precede large deployments. Saved named table
-views, per-field grants, and multi-human editing are not implemented yet. A private
-R2 adapter is available for the [Cloudflare Container deployment](cloudflare-deployment.md);
-local and Compose installations retain private filesystem storage by default.
+Structured records leave headroom under D1's 2,000,000-byte row limit. These are
+validation bounds, not benchmarked capacity promises. Workspace snapshots still
+load current page bodies and table records together; pagination is needed before
+large deployments. Named table views, per-field grants, and multi-human editing
+are not included.
 
-## Test environment
+## Verification
 
-`pnpm test` uses isolated PGlite databases, including a disk close/reopen test.
-`pnpm build` does not require credentials. `pnpm test:e2e` launches the standalone
-bundle with an isolated temporary database, generated auth secret, and local-only
-test setup token. Production-mode PGlite requires an explicit
-`BOOTSTRAP_ALLOW_LOCAL_DATABASE=true`; the test harness sets this, normal hosting
-should not.
+`pnpm test` uses isolated SQLite databases and actual local workerd D1/R2 bindings.
+D1 tests exercise competing clients, atomic rollback, a lost response after commit,
+and killing/restarting a separate worker. `pnpm build` needs no credentials.
+`pnpm test:e2e` launches the production standalone bundle with a fresh D1 binding,
+private test transport, generated auth secret, and deterministic model fixture.
+No inherited production database or paid model is used.
 
-If a supported local Chromium is already installed, the browser-test configuration
-accepts `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`. CI installs the Playwright browser.
-Do not weaken a host's sandbox or network policy to make browser tests run.
+CI installs Chromium. A local installation can use
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`. See [agent execution](agent-execution.md)
+for provider settings, recovery, and the manual acceptance flow.

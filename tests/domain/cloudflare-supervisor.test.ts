@@ -11,7 +11,7 @@ const supervisor = fileURLToPath(
 );
 const env = {
   ...process.env,
-  DATABASE_URL: "postgresql://test:test@127.0.0.1:5432/fixture",
+  BOOTSTRAP_DATABASE: "cloudflare-d1",
   BETTER_AUTH_URL: "https://bootstrap.example",
   BETTER_AUTH_SECRET: "test-secret-unused-by-fixtures",
   BOOTSTRAP_SETUP_TOKEN: "test-token-unused-by-fixtures",
@@ -58,9 +58,9 @@ describe("Cloudflare process supervisor", () => {
     }
   });
 
-  it("refuses to start without external database configuration", async () => {
+  it("refuses to start without durable D1 configuration", async () => {
     const child = spawn(process.execPath, [supervisor], {
-      env: { ...env, DATABASE_URL: "" },
+      env: { ...env, BOOTSTRAP_DATABASE: "" },
       stdio: "ignore",
     });
     const [code] = await once(child, "exit");

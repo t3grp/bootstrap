@@ -4,7 +4,9 @@ import { runAgentWorker } from "./lib/server/agent-worker";
 export function startEmbeddedWorker() {
   const mode =
     process.env.BOOTSTRAP_AGENT_WORKER ??
-    (process.env.DATABASE_URL ? "external" : "embedded");
+    (process.env.BOOTSTRAP_DATABASE === "cloudflare-d1"
+      ? "external"
+      : "embedded");
   if (mode !== "embedded") return;
   const singleton = globalThis as typeof globalThis & {
     bootstrapAgentWorker?: AbortController;
@@ -12,7 +14,7 @@ export function startEmbeddedWorker() {
   if (singleton.bootstrapAgentWorker) return;
   const controller = new AbortController();
   singleton.bootstrapAgentWorker = controller;
-  // Local PGlite shares the web process and its single database connection.
+  // Local SQLite can run the worker inside the web process for easy development.
   void getDatabase()
     .then((db) => runAgentWorker(db, controller.signal))
     .catch((error) => {

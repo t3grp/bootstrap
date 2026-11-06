@@ -10,7 +10,10 @@ import { AppError } from "./errors";
 import { MAX_FILE_BYTES } from "../../../../../packages/core/src/file-storage";
 
 export const LIMITS = {
-  documentBytes: 2 * 1024 * 1024,
+  // Leave headroom under D1's 2,000,000-byte total row limit.
+  documentBytes: 1_000_000,
+  tableBytes: 1_000_000,
+  agentBytes: 1_000_000,
   documentNodes: 2_000,
   documentDepth: 16,
   tableColumns: 50,
@@ -293,7 +296,7 @@ export function validatePageContent(value: unknown): PageContent {
   assertKeys(value, ["type", "content"], "document");
   if (value.content.length === 0) invalid("A page needs at least one block.");
   if (Buffer.byteLength(JSON.stringify(value)) > LIMITS.documentBytes)
-    invalid("This page exceeds the 2 MB content limit.");
+    invalid("This page exceeds the 1 MB content limit.");
   const ids = new Set<string>();
   let count = 0;
   function visit(raw: unknown, parent: string, depth: number): void {
@@ -552,7 +555,7 @@ export function validateTable(columns: TableColumn[], rows: TableRow[]) {
           break;
       }
     }
-  if (Buffer.byteLength(JSON.stringify({ columns, rows })) > 4 * 1024 * 1024)
-    invalid("This table exceeds the 4 MB size limit.");
+  if (Buffer.byteLength(JSON.stringify({ columns, rows })) > LIMITS.tableBytes)
+    invalid("This table exceeds the 1 MB size limit.");
   return [...fileIds];
 }

@@ -64,10 +64,10 @@ beforeAll(async () => {
   await db.insert(schema.instance).values({ id: "primary", ownerId: owner.id });
 });
 beforeEach(async () => {
-  workspaceId = await db.transaction((tx) =>
+  workspaceId = await db.atomic((tx) =>
     createWorkspace(tx, owner.id, "Owner workspace"),
   );
-  foreignWorkspaceId = await db.transaction((tx) =>
+  foreignWorkspaceId = await db.atomic((tx) =>
     createWorkspace(tx, outsider.id, "Private workspace"),
   );
 });
@@ -190,7 +190,7 @@ describe("workspace boundaries and persistence", () => {
     try {
       local = await createDatabase({ directory });
       await local.db.insert(schema.user).values(owner);
-      const id = await local.db.transaction((tx) =>
+      const id = await local.db.atomic((tx) =>
         createWorkspace(tx, owner.id, "Persistent workspace"),
       );
       const snapshot = await getSnapshot(local.db, owner, id);
@@ -488,8 +488,42 @@ describe("typed tables and safe exports", () => {
       }),
     ).toThrow(/invalid position/);
     expect(() =>
-      validatePageContent(textContent("x".repeat(2_100_000))),
-    ).toThrow(/2 MB/);
+      validatePageContent(textContent("x".repeat(1_100_000))),
+    ).toThrow(/1 MB/);
+  });
+
+  it("keeps cumulative agent notes within D1's row budget across separate updates", async () => {
+    let state = await run({ type: "agent.create", name: "Bounded specialist" });
+    const id = state.agents[0].id;
+    const notes = Array.from({ length: 22 }, () => "x".repeat(20_000));
+    await run({ type: "agent.update", id, patch: { skills: notes } });
+    state = await run({ type: "agent.update", id, patch: { routines: notes } });
+    await expect(
+      run({ type: "agent.update", id, patch: { memories: notes } }),
+    ).rejects.toMatchObject({ code: "CAPACITY_LIMIT" });
+    const saved = await getSnapshot(db, owner, workspaceId);
+    expect(saved.agents[0].memories).toEqual([]);
+    expect(saved.agents[0].routines).toEqual(state.agents[0].routines);
+  });
+
+  it("counts UTF-8 table bytes before accepting a record that would exceed the D1 budget", async () => {
+    const state = await run({ type: "table.create", name: "Unicode rows" });
+    const table = state.tables[0];
+    const rows = Array.from({ length: 30 }, () => ({
+      id: randomUUID(),
+      cells: { [table.columns[0].id]: "é".repeat(20_000) },
+    }));
+    await expect(
+      run({
+        type: "table.update",
+        id: table.id,
+        revision: table.revision,
+        patch: { rows },
+      }),
+    ).rejects.toThrow(/1 MB/);
+    expect((await getSnapshot(db, owner, workspaceId)).tables[0].rows).toEqual(
+      [],
+    );
   });
 
   it("escapes spreadsheet formulas and documents lossy Markdown fallbacks", async () => {

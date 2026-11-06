@@ -57,7 +57,11 @@ async function createAuth() {
     appName: "Bootstrap",
     baseURL,
     secret,
-    database: drizzleAdapter(db, { provider: "pg", schema }),
+    database: drizzleAdapter(db, {
+      provider: "sqlite",
+      schema,
+      transaction: false,
+    }),
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,

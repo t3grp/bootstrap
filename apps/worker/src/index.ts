@@ -1,9 +1,12 @@
 import { getConnection } from "../../../packages/db/src/index";
 import { runAgentWorker } from "../../web/src/lib/server/agent-worker";
 
-if (!process.env.DATABASE_URL)
+if (
+  process.env.BOOTSTRAP_DATABASE !== "cloudflare-d1" &&
+  !process.env.BOOTSTRAP_DATA_DIR
+)
   throw new Error(
-    "The separate worker requires DATABASE_URL. Local PGlite uses the embedded web worker.",
+    "The separate worker requires D1 or a persistent BOOTSTRAP_DATA_DIR shared with the web app.",
   );
 const connection = await getConnection();
 const controller = new AbortController();

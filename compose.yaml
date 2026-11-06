@@ -1,25 +1,10 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_DB: bootstrap
-      POSTGRES_USER: bootstrap
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a random PostgreSQL password}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bootstrap -d bootstrap"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    restart: unless-stopped
-
   web:
     build: .
     ports:
       - "127.0.0.1:3000:3000"
     environment:
-      DATABASE_URL: postgresql://bootstrap:${POSTGRES_PASSWORD}@postgres:5432/bootstrap
+      BOOTSTRAP_ALLOW_LOCAL_DATABASE: "true"
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a random authentication secret}
       BOOTSTRAP_SETUP_TOKEN: ${BOOTSTRAP_SETUP_TOKEN:?Set a separate random setup token}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
@@ -35,9 +20,6 @@ services:
       BOOTSTRAP_AGENT_TIMEOUT_MS: ${BOOTSTRAP_AGENT_TIMEOUT_MS:-120000}
     volumes:
       - private-files:/var/lib/bootstrap
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test:
         [
@@ -55,7 +37,7 @@ services:
     build: .
     command: ["node", "worker.mjs"]
     environment:
-      DATABASE_URL: postgresql://bootstrap:${POSTGRES_PASSWORD}@postgres:5432/bootstrap
+      BOOTSTRAP_ALLOW_LOCAL_DATABASE: "true"
       BOOTSTRAP_DATA_DIR: /var/lib/bootstrap
       BOOTSTRAP_MODEL_PROVIDER: ${BOOTSTRAP_MODEL_PROVIDER:-}
       BOOTSTRAP_ENABLE_TEST_PROVIDER: ${BOOTSTRAP_ENABLE_TEST_PROVIDER:-false}
@@ -67,11 +49,7 @@ services:
       BOOTSTRAP_AGENT_TIMEOUT_MS: ${BOOTSTRAP_AGENT_TIMEOUT_MS:-120000}
     volumes:
       - private-files:/var/lib/bootstrap
-    depends_on:
-      postgres:
-        condition: service_healthy
     restart: unless-stopped
 
 volumes:
-  postgres-data:
   private-files:

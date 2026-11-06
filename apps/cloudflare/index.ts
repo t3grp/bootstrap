@@ -1,6 +1,8 @@
 import { Container, getContainer } from "@cloudflare/containers";
 import { FILE_STORAGE_HOST } from "../../packages/core/src/file-storage";
 import { handlePrivateFile } from "./storage";
+import { DATABASE_HOST } from "../../packages/db/src/transport";
+import { handlePrivateDatabase } from "./database";
 
 // Required by the Containers SDK for private outbound binding access.
 export { ContainerProxy } from "@cloudflare/containers";
@@ -8,7 +10,7 @@ export { ContainerProxy } from "@cloudflare/containers";
 export interface Env {
   BOOTSTRAP: DurableObjectNamespace<BootstrapContainer>;
   FILES: R2Bucket;
-  DATABASE_URL: string;
+  DB: D1Database;
   BETTER_AUTH_URL: string;
   BETTER_AUTH_SECRET: string;
   BOOTSTRAP_SETUP_TOKEN: string;
@@ -21,14 +23,14 @@ export interface Env {
 export class BootstrapContainer extends Container<Env> {
   defaultPort = 3000;
   // Longer than the maximum five-minute assignment deadline; idle instances
-  // sleep, while PostgreSQL and R2 remain durable outside the container.
+  // sleep, while D1 and R2 remain durable outside the container.
   sleepAfter = "10m";
   entrypoint = ["node", "cloudflare-supervisor.mjs"];
   envVars = {
     NODE_ENV: "production",
     HOSTNAME: "0.0.0.0",
     PORT: "3000",
-    DATABASE_URL: this.env.DATABASE_URL,
+    BOOTSTRAP_DATABASE: "cloudflare-d1",
     BETTER_AUTH_URL: this.env.BETTER_AUTH_URL,
     BETTER_AUTH_SECRET: this.env.BETTER_AUTH_SECRET,
     BOOTSTRAP_SETUP_TOKEN: this.env.BOOTSTRAP_SETUP_TOKEN,
@@ -42,6 +44,8 @@ export class BootstrapContainer extends Container<Env> {
 }
 
 BootstrapContainer.outboundByHost = {
+  [DATABASE_HOST]: (request, env: Env) =>
+    handlePrivateDatabase(request, env.DB),
   [FILE_STORAGE_HOST]: (request, env: Env) =>
     handlePrivateFile(request, env.FILES),
 };

@@ -30,7 +30,7 @@ beforeAll(async () => {
     .values({ id: "primary", ownerId: owner.id });
 });
 beforeEach(async () => {
-  workspaceId = await connection.db.transaction((tx) =>
+  workspaceId = await connection.db.atomic((tx) =>
     createWorkspace(tx, owner.id, "Rapid table edits"),
   );
   acknowledged = new AcknowledgedTableRevisions();
@@ -142,7 +142,7 @@ describe("table save acknowledgements", () => {
   it("does not reuse another workspace's acknowledgement for an overlapping table ID", async () => {
     const initial = await newTable();
     await persist({ ...initial, name: "A local save in the first workspace" });
-    const otherWorkspaceId = await connection.db.transaction((tx) =>
+    const otherWorkspaceId = await connection.db.atomic((tx) =>
       createWorkspace(tx, owner.id, "Another workspace"),
     );
     await connection.db.insert(schema.businessTables).values({

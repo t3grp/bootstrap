@@ -23,10 +23,13 @@ function checkSetupRate() {
       "RATE_LIMITED",
     );
 }
-function databaseErrorCode(error: unknown): string | undefined {
-  if (!error || typeof error !== "object") return;
-  if ("code" in error && typeof error.code === "string") return error.code;
-  if ("cause" in error) return databaseErrorCode(error.cause);
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    (error.message.includes("UNIQUE constraint failed") ||
+      error.message.includes("D1_UNIQUE_CONSTRAINT") ||
+      isUniqueViolation(error.cause))
+  );
 }
 
 export async function initializeOwner(input: unknown, database?: Database) {
@@ -50,27 +53,23 @@ export async function initializeOwner(input: unknown, database?: Database) {
     );
   const password = await hashPassword(values.password);
   try {
-    return await db.transaction(async (tx) => {
+    return await db.atomic(async (tx) => {
       const ownerId = randomUUID();
-      await tx
-        .insert(schema.user)
-        .values({
-          id: ownerId,
-          name: values.name,
-          email: values.email,
-          emailVerified: false,
-        });
+      await tx.insert(schema.user).values({
+        id: ownerId,
+        name: values.name,
+        email: values.email,
+        emailVerified: false,
+      });
       // The fixed primary key is the atomic first-owner gate. A losing transaction rolls back everything.
       await tx.insert(schema.instance).values({ id: "primary", ownerId });
-      await tx
-        .insert(schema.account)
-        .values({
-          id: randomUUID(),
-          userId: ownerId,
-          accountId: ownerId,
-          providerId: "credential",
-          password,
-        });
+      await tx.insert(schema.account).values({
+        id: randomUUID(),
+        userId: ownerId,
+        accountId: ownerId,
+        providerId: "credential",
+        password,
+      });
       const workspaceId = await createWorkspace(
         tx,
         ownerId,
@@ -79,7 +78,7 @@ export async function initializeOwner(input: unknown, database?: Database) {
       return { initialized: true, workspaceId };
     });
   } catch (error) {
-    if (databaseErrorCode(error) === "23505")
+    if (isUniqueViolation(error))
       throw new AppError(
         409,
         "This instance already has an owner. Sign in instead.",

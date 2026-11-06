@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import { cp, mkdtemp, rm } from "node:fs/promises";
+import { cp, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -13,7 +13,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { createDatabase, schema, type DatabaseConnection } from "@bootstrap/db";
 import type { AssignmentInput } from "@bootstrap/core";
 import {
@@ -34,11 +34,14 @@ import {
   providerSettings,
 } from "../../apps/web/src/lib/server/agent-provider";
 
-const url = process.env.BOOTSTRAP_TEST_DATABASE_URL;
+import { startD1 } from "../helpers/d1";
+let runtime: Awaited<ReturnType<typeof startD1>>;
+let fixtureDirectory: string;
+let preload: string;
 const owner = {
   id: randomUUID(),
-  name: "Postgres owner",
-  email: `postgres-${randomUUID()}@example.test`,
+  name: "D1 owner",
+  email: `d1-${randomUUID()}@example.test`,
 };
 const settings = providerSettings({
   BOOTSTRAP_MODEL_PROVIDER: "deterministic",
@@ -63,13 +66,14 @@ function worker(delayMs: number) {
     process.env.BOOTSTRAP_TEST_BUILT_WORKER === "true"
       ? [path.join(isolatedBundle!, "worker.mjs")]
       : ["--import", "tsx", path.resolve("apps/worker/src/index.ts")];
-  const child = spawn(process.execPath, args, {
+  const child = spawn(process.execPath, ["--import", preload, ...args], {
     cwd: isolatedBundle ?? process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
       NODE_PATH: "",
-      DATABASE_URL: url!,
+      DATABASE_URL: "",
+      BOOTSTRAP_DATABASE: "cloudflare-d1",
       BOOTSTRAP_MODEL_PROVIDER: "deterministic",
       BOOTSTRAP_ENABLE_TEST_PROVIDER: "true",
       BOOTSTRAP_MODEL_API_KEY: "",
@@ -86,18 +90,23 @@ function worker(delayMs: number) {
   return { child, diagnostic: () => diagnostic };
 }
 
-describe.skipIf(!url)("PostgreSQL concurrency and real worker restart", () => {
+describe("D1 concurrency and real worker restart", () => {
   beforeAll(async () => {
-    const parsed = new URL(url!);
-    if (
-      !["127.0.0.1", "localhost"].includes(parsed.hostname) ||
-      parsed.pathname !== "/bootstrap_test"
-    )
-      throw new Error(
-        "Concurrency tests require a loopback database named bootstrap_test. Never use production data.",
-      );
-    a = await createDatabase({ url });
-    b = await createDatabase({ url });
+    runtime = await startD1();
+    fixtureDirectory = await mkdtemp(
+      path.join(os.tmpdir(), "bootstrap-d1-worker-"),
+    );
+    preload = path.join(fixtureDirectory, "private-d1.mjs");
+    await writeFile(
+      preload,
+      `const original = globalThis.fetch;
+      globalThis.fetch = (input, init) => original(
+        typeof input === 'string' && input.startsWith('http://bootstrap-db.internal/')
+          ? input.replace('http://bootstrap-db.internal', ${JSON.stringify(runtime.origin)}) : input, init);
+    `,
+    );
+    a = await createDatabase({ transport: runtime.transport });
+    b = await createDatabase({ transport: runtime.transport });
     await a.db.insert(schema.user).values(owner);
     if (process.env.BOOTSTRAP_TEST_BUILT_WORKER === "true") {
       isolatedBundle = await mkdtemp(
@@ -110,13 +119,13 @@ describe.skipIf(!url)("PostgreSQL concurrency and real worker restart", () => {
     }
   });
   beforeEach(async () => {
-    await a.db.execute(sql`TRUNCATE TABLE workspaces CASCADE`);
-    workspaceId = await a.db.transaction((tx) =>
-      createWorkspace(tx, owner.id, "Postgres integration"),
+    await a.db.delete(schema.workspaces);
+    workspaceId = await a.db.atomic((tx) =>
+      createWorkspace(tx, owner.id, "D1 integration"),
     );
     const state = await executeCommand(a.db, owner, workspaceId, {
       type: "agent.create",
-      name: "Postgres researcher",
+      name: "D1 researcher",
     });
     const agentId = state.agents[0].id;
     await executeCommand(a.db, owner, workspaceId, {
@@ -128,7 +137,7 @@ describe.skipIf(!url)("PostgreSQL concurrency and real worker restart", () => {
       operationKey: randomUUID(),
       agentId,
       prompt: "Write a founder checklist.",
-      outputTitle: "PostgreSQL result",
+      outputTitle: "D1 result",
       resources: [],
     };
   });
@@ -136,11 +145,14 @@ describe.skipIf(!url)("PostgreSQL concurrency and real worker restart", () => {
     for (const child of children) await stop(child, "SIGKILL");
     await a?.close();
     await b?.close();
+    await runtime?.close();
+    if (fixtureDirectory)
+      await rm(fixtureDirectory, { recursive: true, force: true });
     if (isolatedBundle)
       await rm(isolatedBundle, { recursive: true, force: true });
   });
 
-  it("serializes admission, worker claims, and result acceptance across independent pools", async () => {
+  it("serializes admission, worker claims, and result acceptance across independent clients", async () => {
     const [first, replay] = await Promise.all([
       admitAssignment(a.db, owner, workspaceId, input, settings),
       admitAssignment(b.db, owner, workspaceId, input, settings),

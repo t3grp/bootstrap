@@ -39,8 +39,7 @@ async function lock(tx: Transaction, workspaceId: string) {
   await tx
     .select({ id: workspaces.id })
     .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
-    .for("update");
+    .where(eq(workspaces.id, workspaceId));
 }
 function owns(job: RunJob, lease: Lease) {
   return (
@@ -52,7 +51,7 @@ function owns(job: RunJob, lease: Lease) {
   );
 }
 
-/** Durable run rows are the bounded queue. Workspace locking also fences concurrent claims. */
+/** Durable run rows are the bounded queue. The atomic revision guard also fences concurrent claims. */
 export async function claimAgentRun(
   db: Database,
   workerId: string,
@@ -73,7 +72,7 @@ export async function claimAgentRun(
     .orderBy(asc(agentRuns.createdAt))
     .limit(32);
   for (const candidate of candidates) {
-    const claim = await db.transaction(async (tx) => {
+    const claim = await db.atomic(async (tx) => {
       await lock(tx, candidate.workspaceId);
       const job = await loadRun(tx, candidate.workspaceId, candidate.id);
       const run = job.run;
@@ -190,7 +189,7 @@ export async function prepareAgentStep(
   lease: Lease,
   provider: ModelProvider,
 ) {
-  return db.transaction(async (tx) => {
+  return db.atomic(async (tx) => {
     await lock(tx, lease.workspaceId);
     const job = await loadRun(tx, lease.workspaceId, lease.runId);
     if (!owns(job, lease)) return null;
@@ -240,7 +239,7 @@ export async function prepareAgentStep(
 }
 
 async function pulse(db: Database, lease: Lease) {
-  return db.transaction(async (tx) => {
+  return db.atomic(async (tx) => {
     await lock(tx, lease.workspaceId);
     const job = await loadRun(tx, lease.workspaceId, lease.runId);
     if (!owns(job, lease)) return false;
@@ -278,7 +277,7 @@ async function appendOutput(
   text: string,
   outputText: string,
 ) {
-  return db.transaction(async (tx) => {
+  return db.atomic(async (tx) => {
     await lock(tx, lease.workspaceId);
     const job = await loadRun(tx, lease.workspaceId, lease.runId);
     if (!owns(job, lease)) return false;
@@ -303,7 +302,7 @@ export async function checkpointAgentResult(
   outputText: string,
   usage: { inputTokens: number | null; outputTokens: number | null },
 ) {
-  return db.transaction(async (tx) => {
+  return db.atomic(async (tx) => {
     await lock(tx, lease.workspaceId);
     const job = await loadRun(tx, lease.workspaceId, lease.runId);
     if (!owns(job, lease)) return false;
@@ -344,7 +343,7 @@ export async function checkpointAgentResult(
 }
 
 export async function finishAgentRun(db: Database, lease: Lease) {
-  return db.transaction(async (tx) => {
+  return db.atomic(async (tx) => {
     await lock(tx, lease.workspaceId);
     const job = await loadRun(tx, lease.workspaceId, lease.runId);
     if (!owns(job, lease) || job.run.checkpoint !== "generated") return false;
@@ -520,7 +519,7 @@ export async function executeAgentLease(
       await finishAgentRun(db, lease);
   } catch (error) {
     if (options.signal?.aborted) return; // Leave checkpoint and lease for restart recovery.
-    await db.transaction(async (tx) => {
+    await db.atomic(async (tx) => {
       await lock(tx, lease.workspaceId);
       const job = await loadRun(tx, lease.workspaceId, lease.runId);
       if (!owns(job, lease)) return;

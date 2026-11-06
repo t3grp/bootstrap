@@ -7,8 +7,7 @@ available without model credentials.
 
 ## Try it without AI requests
 
-Check out `feat/agent-execution` while the stacked implementation PR is under review.
-Use Node.js 22.16+ and pnpm 11.25.0:
+Use Node.js 24+ and pnpm 11.25.0:
 
 ```sh
 pnpm install --frozen-lockfile
@@ -23,8 +22,7 @@ BOOTSTRAP_ENABLE_TEST_PROVIDER=true
 ```
 
 Run `pnpm dev`, open the configured origin (normally `http://localhost:3000`), and
-create/sign in as the owner. PGlite uses an embedded worker in the same Node
-process, sharing the existing single database connection. No model API key is
+create/sign in as the owner. Local SQLite uses an embedded worker in the same Node process. No model API key is
 needed. The UI and every result explicitly identify deterministic fixture output;
 this provider does not reason about the task or call an AI service.
 
@@ -105,10 +103,11 @@ checks returned usage, and stops local acceptance if the provider reports an exc
 A provider that disregards its own cap may still charge for already dispatched
 work. Unknown usage stays unknown. There is no credit ledger or currency budget yet.
 
-## PostgreSQL and the separate worker
+## D1/SQLite and the separate worker
 
-For PostgreSQL, set `DATABASE_URL` in `apps/web/.env.local`. The web app defaults to
-external-worker mode. In another terminal, using the same environment:
+For self-hosted SQLite, set `BOOTSTRAP_DATA_DIR` to the shared persistent directory
+and `BOOTSTRAP_AGENT_WORKER=external` in both process environments. Cloudflare sets
+`BOOTSTRAP_DATABASE=cloudflare-d1` and uses the supervised external worker.
 
 ```sh
 pnpm dev
@@ -116,19 +115,17 @@ pnpm dev
 pnpm worker
 ```
 
-`pnpm worker` loads `apps/web/.env.local` when present and refuses to open local
-PGlite in a second process. Web and worker must share the same database and
+`pnpm worker` loads `apps/web/.env.local` when present. Web and worker must share the same database and
 `BOOTSTRAP_DATA_DIR` for private file reads. The `BOOTSTRAP_AGENT_WORKER` web setting
-is `embedded` or `external`; the defaults select embedded for PGlite and external
-for PostgreSQL. A queued assignment remains durable if the external worker is
+is `embedded` or `external`; the defaults select embedded for SQLite and external
+for Cloudflare D1. A queued assignment remains durable if the external worker is
 offline. Its UI says it is waiting for the worker; it does not invent progress.
 
 `pnpm build` creates the web standalone bundle and a bundled `worker.mjs` in
 `apps/web/.next/standalone/`. The worker uses the same migrations and database
 dependencies as the web bundle. The Compose recipe runs web and worker as separate
 services with a shared private-files volume. Start it with the environment in
-[self-hosting](self-hosting.md), plus the chosen provider settings. This PR does
-not deploy those services.
+[self-hosting](self-hosting.md), plus the chosen provider settings. The Cloudflare supervisor runs both processes in one container.
 
 The bounded run table is this slice's transactional queue. Admission writes the
 assignment, thread, user message, run, and first event together. Workers select
@@ -190,7 +187,7 @@ needed. Provider reconciliation UI/automated usage lookup are later work.
 
 ## Verification
 
-The focused suite runs the real migrated PGlite schema and a deterministic or
+The focused suite runs the real migrated SQLite schema and a deterministic or
 explicitly mocked adapter:
 
 ```sh
@@ -198,21 +195,20 @@ pnpm exec vitest run tests/domain/agent-execution.test.ts tests/domain/agent-pro
 pnpm exec playwright test tests/e2e/agent-execution.spec.ts
 ```
 
-CI also starts a dedicated PostgreSQL 17 service. Two independent pools race
-admission, claims, and saves. The standalone bundle is copied outside the checkout
-so it cannot resolve missing packages from development dependencies. A real built
-worker process from that isolated copy is killed during streaming;
-a replacement process recovers the same deterministic run and produces one result.
-The PostgreSQL tests refuse non-loopback URLs or database names other than
-`bootstrap_test`. To run them locally against a disposable database:
+CI starts an isolated local workerd D1 binding. Two independent clients race
+admission, claims, and saves through the same private handler used in production.
+The standalone bundle is copied outside the checkout so it cannot resolve missing
+packages from development dependencies. A real built worker is killed during
+streaming; its replacement recovers the same deterministic run and produces one
+result. The tests create their own temporary database and do not accept production
+connection settings. To run them locally:
 
 ```sh
 pnpm build
-BOOTSTRAP_TEST_DATABASE_URL=postgresql://bootstrap_test:bootstrap_test@127.0.0.1:5432/bootstrap_test BOOTSTRAP_TEST_BUILT_WORKER=true pnpm exec vitest run tests/domain/agent-postgres.test.ts
+BOOTSTRAP_TEST_BUILT_WORKER=true pnpm exec vitest run tests/domain/agent-d1.test.ts
 ```
 
-These tests truncate workspace tables in that dedicated test database. Never point
-them at business data. The browser harness explicitly clears all live model settings,
+These tests delete only workspace rows in their own temporary D1 binding. The browser harness explicitly clears all live model settings,
 enables the deterministic provider, and creates isolated local data. Existing editor,
 navigation, table revision, and manual workspace regressions remain in final CI.
 See [build status](build-status.md) and the implementation PR for exact results.

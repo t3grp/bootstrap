@@ -1,15 +1,14 @@
 import { spawn } from "node:child_process";
 
 for (const name of [
-  "DATABASE_URL",
   "BETTER_AUTH_URL",
   "BETTER_AUTH_SECRET",
   "BOOTSTRAP_SETUP_TOKEN",
 ]) {
   if (!process.env[name]) throw new Error(`${name} is required on Cloudflare.`);
 }
-if (!process.env.DATABASE_URL.startsWith("postgres"))
-  throw new Error("Cloudflare requires an external PostgreSQL database.");
+if (process.env.BOOTSTRAP_DATABASE !== "cloudflare-d1")
+  throw new Error("Cloudflare requires durable D1 database storage.");
 if (new URL(process.env.BETTER_AUTH_URL).protocol !== "https:")
   throw new Error("BETTER_AUTH_URL must be an HTTPS origin on Cloudflare.");
 if (process.env.BOOTSTRAP_FILE_STORAGE !== "cloudflare-r2")

@@ -8,8 +8,6 @@
   },
   "dependencies": {
     "@bootstrap/core": "workspace:*",
-    "@electric-sql/pglite": "0.5.15",
-    "drizzle-orm": "0.45.4",
-    "pg": "8.23.1"
+    "drizzle-orm": "0.45.4"
   }
 }

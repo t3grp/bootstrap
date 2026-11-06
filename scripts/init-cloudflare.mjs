@@ -2,12 +2,7 @@ import { randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-const databaseUrl = process.env.DATABASE_URL;
 const publicUrl = process.env.BOOTSTRAP_PUBLIC_URL;
-if (!databaseUrl || !/^postgres(?:ql)?:\/\//.test(databaseUrl))
-  throw new Error(
-    "Set DATABASE_URL to the dedicated external PostgreSQL connection.",
-  );
 if (!publicUrl)
   throw new Error("Set BOOTSTRAP_PUBLIC_URL to the deployment's HTTPS origin.");
 const origin = new URL(publicUrl);
@@ -22,7 +17,6 @@ await writeFile(
   destination,
   JSON.stringify(
     {
-      DATABASE_URL: databaseUrl,
       BETTER_AUTH_URL: origin.origin,
       BETTER_AUTH_SECRET: randomBytes(32).toString("hex"),
       BOOTSTRAP_SETUP_TOKEN: randomBytes(32).toString("hex"),

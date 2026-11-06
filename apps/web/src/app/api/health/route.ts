@@ -5,7 +5,9 @@ import { privateJson } from "@/lib/server/http";
 export const runtime = "nodejs";
 export async function GET() {
   try {
-    await (await getDatabase()).execute(sql`select 1`);
+    await (
+      await getDatabase()
+    ).get(sql`select version from bootstrap_database_revision where id = 1`);
     return privateJson({ status: "ok" });
   } catch {
     return privateJson({ status: "unavailable" }, 503);

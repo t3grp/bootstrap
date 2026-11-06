@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, count, eq } from "drizzle-orm";
-import type { AnyPgColumn } from "drizzle-orm/pg-core";
+import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import {
   schema,
   type Database,
@@ -37,8 +37,8 @@ const {
 export type Actor = { id: string; name: string; email: string };
 const scope = <
   T extends {
-    workspaceId: AnyPgColumn<{ data: string }>;
-    id: AnyPgColumn<{ data: string }>;
+    workspaceId: AnySQLiteColumn<{ data: string }>;
+    id: AnySQLiteColumn<{ data: string }>;
   },
 >(
   table: T,
@@ -75,8 +75,7 @@ export async function lockWorkspace(
   const [workspace] = await tx
     .select()
     .from(workspaces)
-    .where(eq(workspaces.id, workspaceId))
-    .for("update");
+    .where(eq(workspaces.id, workspaceId));
   if (!workspace) throw notFound();
 }
 
@@ -151,24 +150,20 @@ export async function createWorkspace(
       },
     ],
   };
-  await tx
-    .insert(documents)
-    .values({
-      id: pageId,
-      workspaceId: id,
-      title: "Welcome to your workspace",
-      icon: "✦",
-      favorite: true,
-    });
-  await tx
-    .insert(documentVersions)
-    .values({
-      workspaceId: id,
-      documentId: pageId,
-      revision: 1,
-      content,
-      authorId: userId,
-    });
+  await tx.insert(documents).values({
+    id: pageId,
+    workspaceId: id,
+    title: "Welcome to your workspace",
+    icon: "✦",
+    favorite: true,
+  });
+  await tx.insert(documentVersions).values({
+    workspaceId: id,
+    documentId: pageId,
+    revision: 1,
+    content,
+    authorId: userId,
+  });
   return id;
 }
 
@@ -418,10 +413,10 @@ async function reviseDocument(
   workspaceId: string,
   page: typeof documents.$inferSelect,
   changes: Partial<typeof documents.$inferInsert>,
-  content?: PageContent,
+  content: PageContent,
 ) {
   const revision = page.revision + 1;
-  const saved = await tx
+  await tx
     .update(documents)
     .set({ ...changes, revision, updatedAt: new Date() })
     .where(
@@ -429,20 +424,39 @@ async function reviseDocument(
         scope(documents, workspaceId, page.id),
         eq(documents.revision, page.revision),
       ),
-    )
-    .returning({ id: documents.id });
-  if (!saved.length) throw conflict(page.revision);
-  await tx
-    .insert(documentVersions)
-    .values({
-      workspaceId,
-      documentId: page.id,
-      revision,
-      content:
-        content ??
-        (await documentContent(tx, workspaceId, page.id, page.revision)),
-      authorId: actorId,
-    });
+    );
+  await tx.insert(documentVersions).values({
+    workspaceId,
+    documentId: page.id,
+    revision,
+    content,
+    authorId: actorId,
+  });
+}
+
+async function pageContents(
+  tx: QueryDatabase,
+  workspaceId: string,
+  pages: (typeof documents.$inferSelect)[],
+) {
+  const contents = new Map(
+    await Promise.all(
+      pages.map(
+        async (page) =>
+          [
+            page.id,
+            await documentContent(tx, workspaceId, page.id, page.revision),
+          ] as const,
+      ),
+    ),
+  );
+  if (Buffer.byteLength(JSON.stringify([...contents.values()])) > 4_000_000)
+    throw new AppError(
+      413,
+      "This change includes too much page content. Move or restore smaller groups of pages.",
+      "BATCH_TOO_LARGE",
+    );
+  return contents;
 }
 
 function descendantIds(all: (typeof documents.$inferSelect)[], id: string) {
@@ -459,7 +473,7 @@ function descendantIds(all: (typeof documents.$inferSelect)[], id: string) {
   return ids;
 }
 
-/** Every mutation serializes its workspace; parent moves and revision checks share a transaction. */
+/** Reads are validated again by the atomic D1 batch before any mutation commits. */
 export async function executeCommand(
   db: Database,
   actor: Actor,
@@ -468,7 +482,7 @@ export async function executeCommand(
 ) {
   const command = parseCommand(input);
   idSchema.parse(workspaceId);
-  const resultWorkspace = await db.transaction(async (tx) => {
+  const resultWorkspace = await db.atomic(async (tx) => {
     await lockWorkspace(tx, actor.id, workspaceId);
     const now = new Date();
     switch (command.type) {
@@ -500,23 +514,28 @@ export async function executeCommand(
         break;
       case "project.create":
         await roomFor(tx, workspaceId, "project");
-        await tx
-          .insert(projects)
-          .values({
-            id: randomUUID(),
-            workspaceId,
-            name: command.name,
-            description: command.description ?? "",
-            color: command.color ?? "#818cf8",
-          });
+        await tx.insert(projects).values({
+          id: randomUUID(),
+          workspaceId,
+          name: command.name,
+          description: command.description ?? "",
+          color: command.color ?? "#818cf8",
+        });
         break;
       case "project.update": {
-        const updated = await tx
+        if (
+          !(
+            await tx
+              .select({ id: projects.id })
+              .from(projects)
+              .where(scope(projects, workspaceId, command.id))
+          ).length
+        )
+          throw notFound();
+        await tx
           .update(projects)
           .set({ ...command.patch, updatedAt: now })
-          .where(scope(projects, workspaceId, command.id))
-          .returning({ id: projects.id });
-        if (!updated.length) throw notFound();
+          .where(scope(projects, workspaceId, command.id));
         break;
       }
       case "page.create": {
@@ -539,26 +558,22 @@ export async function executeCommand(
           .from(documents)
           .where(eq(documents.workspaceId, workspaceId));
         const id = randomUUID();
-        await tx
-          .insert(documents)
-          .values({
-            id,
-            workspaceId,
-            title: command.title?.trim() || "Untitled",
-            parentId: parent?.id ?? null,
-            projectId,
-            kind: command.kind ?? "page",
-            sortOrder: total,
-          });
-        await tx
-          .insert(documentVersions)
-          .values({
-            workspaceId,
-            documentId: id,
-            revision: 1,
-            content: emptyDocument(),
-            authorId: actor.id,
-          });
+        await tx.insert(documents).values({
+          id,
+          workspaceId,
+          title: command.title?.trim() || "Untitled",
+          parentId: parent?.id ?? null,
+          projectId,
+          kind: command.kind ?? "page",
+          sortOrder: total,
+        });
+        await tx.insert(documentVersions).values({
+          workspaceId,
+          documentId: id,
+          revision: 1,
+          content: emptyDocument(),
+          authorId: actor.id,
+        });
         break;
       }
       case "page.update": {
@@ -610,6 +625,16 @@ export async function executeCommand(
                 reference.id,
               );
         }
+        const changedChildren =
+          projectId !== page.projectId
+            ? all.filter(
+                (child) => child.id !== page.id && descendants.has(child.id),
+              )
+            : [];
+        const previousContent = await pageContents(tx, workspaceId, [
+          page,
+          ...changedChildren,
+        ]);
         await reviseDocument(
           tx,
           actor.id,
@@ -623,14 +648,17 @@ export async function executeCommand(
                 : metadata.title.trim() || "Untitled",
             projectId,
           },
-          content,
+          content ?? previousContent.get(page.id)!,
         );
-        if (projectId !== page.projectId)
-          for (const child of all)
-            if (child.id !== page.id && descendants.has(child.id))
-              await reviseDocument(tx, actor.id, workspaceId, child, {
-                projectId,
-              });
+        for (const child of changedChildren)
+          await reviseDocument(
+            tx,
+            actor.id,
+            workspaceId,
+            child,
+            { projectId },
+            previousContent.get(child.id)!,
+          );
         break;
       }
       case "page.trash": {
@@ -642,12 +670,19 @@ export async function executeCommand(
           .where(eq(documents.workspaceId, workspaceId));
         const ids = descendantIds(all, page.id);
         const trashBatchId = randomUUID();
-        for (const item of all)
-          if (ids.has(item.id) && !item.trashedAt)
-            await reviseDocument(tx, actor.id, workspaceId, item, {
-              trashedAt: now,
-              trashBatchId,
-            });
+        const changed = all.filter(
+          (item) => ids.has(item.id) && !item.trashedAt,
+        );
+        const previousContent = await pageContents(tx, workspaceId, changed);
+        for (const item of changed)
+          await reviseDocument(
+            tx,
+            actor.id,
+            workspaceId,
+            item,
+            { trashedAt: now, trashBatchId },
+            previousContent.get(item.id)!,
+          );
         break;
       }
       case "page.restore": {
@@ -668,47 +703,64 @@ export async function executeCommand(
             "Restore the parent page first.",
             "PARENT_IN_TRASH",
           );
-        for (const item of all)
-          if (ids.has(item.id) && item.trashBatchId === page.trashBatchId)
-            await reviseDocument(tx, actor.id, workspaceId, item, {
-              trashedAt: null,
-              trashBatchId: null,
-            });
+        const changed = all.filter(
+          (item) => ids.has(item.id) && item.trashBatchId === page.trashBatchId,
+        );
+        const previousContent = await pageContents(tx, workspaceId, changed);
+        for (const item of changed)
+          await reviseDocument(
+            tx,
+            actor.id,
+            workspaceId,
+            item,
+            { trashedAt: null, trashBatchId: null },
+            previousContent.get(item.id)!,
+          );
         break;
       }
       case "task.create":
         await roomFor(tx, workspaceId, "task");
         await projectExists(tx, workspaceId, command.projectId);
         await validAssignee(tx, workspaceId, command.assignee ?? "me");
-        await tx
-          .insert(tasks)
-          .values({
-            id: randomUUID(),
-            workspaceId,
-            title: command.title,
-            projectId: command.projectId ?? null,
-            dueDate: command.dueDate ?? null,
-            assignee: command.assignee ?? "me",
-          });
+        await tx.insert(tasks).values({
+          id: randomUUID(),
+          workspaceId,
+          title: command.title,
+          projectId: command.projectId ?? null,
+          dueDate: command.dueDate ?? null,
+          assignee: command.assignee ?? "me",
+        });
         break;
       case "task.update": {
         await projectExists(tx, workspaceId, command.patch.projectId);
         if (command.patch.assignee !== undefined)
           await validAssignee(tx, workspaceId, command.patch.assignee);
-        const updated = await tx
+        if (
+          !(
+            await tx
+              .select({ id: tasks.id })
+              .from(tasks)
+              .where(scope(tasks, workspaceId, command.id))
+          ).length
+        )
+          throw notFound();
+        await tx
           .update(tasks)
           .set({ ...command.patch, updatedAt: now })
-          .where(scope(tasks, workspaceId, command.id))
-          .returning({ id: tasks.id });
-        if (!updated.length) throw notFound();
+          .where(scope(tasks, workspaceId, command.id));
         break;
       }
       case "task.delete": {
-        const deleted = await tx
-          .delete(tasks)
-          .where(scope(tasks, workspaceId, command.id))
-          .returning({ id: tasks.id });
-        if (!deleted.length) throw notFound();
+        if (
+          !(
+            await tx
+              .select({ id: tasks.id })
+              .from(tasks)
+              .where(scope(tasks, workspaceId, command.id))
+          ).length
+        )
+          throw notFound();
+        await tx.delete(tasks).where(scope(tasks, workspaceId, command.id));
         break;
       }
       case "table.create":
@@ -772,15 +824,13 @@ export async function executeCommand(
       }
       case "agent.create":
         await roomFor(tx, workspaceId, "agent");
-        await tx
-          .insert(agents)
-          .values({
-            id: randomUUID(),
-            workspaceId,
-            name: command.name,
-            role: command.role ?? "",
-            description: command.description ?? "",
-          });
+        await tx.insert(agents).values({
+          id: randomUUID(),
+          workspaceId,
+          name: command.name,
+          role: command.role ?? "",
+          description: command.description ?? "",
+        });
         break;
       case "agent.update": {
         const [prior] = await tx
@@ -788,6 +838,15 @@ export async function executeCommand(
           .from(agents)
           .where(scope(agents, workspaceId, command.id));
         if (!prior) throw notFound();
+        if (
+          Buffer.byteLength(JSON.stringify({ ...prior, ...command.patch })) >
+          LIMITS.agentBytes
+        )
+          throw new AppError(
+            400,
+            "This agent exceeds the 1 MB configuration limit.",
+            "CAPACITY_LIMIT",
+          );
         for (const id of command.patch.fileIds ?? [])
           if (!prior.fileIds.includes(id))
             await resourceExists(tx, workspaceId, "file", id);
@@ -797,20 +856,32 @@ export async function executeCommand(
         for (const id of command.patch.pageIds ?? [])
           if (!prior.pageIds.includes(id))
             await resourceExists(tx, workspaceId, "page", id);
-        const updated = await tx
+        if (
+          !(
+            await tx
+              .select({ id: agents.id })
+              .from(agents)
+              .where(scope(agents, workspaceId, command.id))
+          ).length
+        )
+          throw notFound();
+        await tx
           .update(agents)
           .set({ ...command.patch, updatedAt: now })
-          .where(scope(agents, workspaceId, command.id))
-          .returning({ id: agents.id });
-        if (!updated.length) throw notFound();
+          .where(scope(agents, workspaceId, command.id));
         break;
       }
       case "agent.delete": {
-        const deleted = await tx
-          .delete(agents)
-          .where(scope(agents, workspaceId, command.id))
-          .returning({ id: agents.id });
-        if (!deleted.length) throw notFound();
+        if (
+          !(
+            await tx
+              .select({ id: agents.id })
+              .from(agents)
+              .where(scope(agents, workspaceId, command.id))
+          ).length
+        )
+          throw notFound();
+        await tx.delete(agents).where(scope(agents, workspaceId, command.id));
         await tx
           .update(tasks)
           .set({ assignee: "unassigned", updatedAt: now })
@@ -824,11 +895,16 @@ export async function executeCommand(
       }
       case "file.delete": {
         // Logical deletion immediately removes download authorization. Storage cleanup is handled after commit.
-        const deleted = await tx
-          .delete(files)
-          .where(scope(files, workspaceId, command.id))
-          .returning({ id: files.id });
-        if (!deleted.length) throw notFound();
+        if (
+          !(
+            await tx
+              .select({ id: files.id })
+              .from(files)
+              .where(scope(files, workspaceId, command.id))
+          ).length
+        )
+          throw notFound();
+        await tx.delete(files).where(scope(files, workspaceId, command.id));
         break;
       }
       default: {
@@ -871,7 +947,7 @@ export async function addPrivateFile(
     sha256: string;
   },
 ) {
-  await db.transaction(async (tx) => {
+  await db.atomic(async (tx) => {
     await lockWorkspace(tx, actor.id, workspaceId);
     await roomFor(tx, workspaceId, "file");
     await tx.insert(files).values({ workspaceId, ...file });

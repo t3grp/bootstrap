@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
     "../..",
   ),
   transpilePackages: ["@bootstrap/core", "@bootstrap/db"],
-  serverExternalPackages: ["@electric-sql/pglite", "pg"],
   outputFileTracingExcludes: {
     "/*": [
       "./.env*",

@@ -81,7 +81,7 @@ const body = (text: string): PageContent => ({
 });
 
 async function setup(database: Database, actor = owner) {
-  const workspaceId = await database.transaction((tx) =>
+  const workspaceId = await database.atomic((tx) =>
     createWorkspace(tx, actor.id, "Agent test"),
   );
   let snapshot = await executeCommand(database, actor, workspaceId, {
@@ -141,9 +141,9 @@ beforeAll(async () => {
   await db.insert(schema.instance).values({ id: "primary", ownerId: owner.id });
 });
 beforeEach(async () => {
-  await db.execute(sql`TRUNCATE TABLE workspaces CASCADE`);
+  await db.delete(schema.workspaces);
   workspaceId = (await setup(db)).workspaceId;
-  foreignWorkspaceId = await db.transaction((tx) =>
+  foreignWorkspaceId = await db.atomic((tx) =>
     createWorkspace(tx, other.id, "Private other workspace"),
   );
 });

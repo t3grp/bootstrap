@@ -21,7 +21,7 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: "node scripts/e2e-server.mjs",
+    command: "node --import tsx scripts/e2e-server.mjs",
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: false,
     timeout: 120000,

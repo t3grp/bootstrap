@@ -366,17 +366,22 @@ export async function addRunEvent(
   type: string,
   message: string,
 ) {
-  const [run] = await tx
+  await tx
     .update(agentRuns)
     .set({
       eventSequence: sql`${agentRuns.eventSequence} + 1`,
       updatedAt: new Date(),
     })
-    .where(runScope(workspaceId, runId))
-    .returning({ sequence: agentRuns.eventSequence });
+    .where(runScope(workspaceId, runId));
   await tx
     .insert(agentRunEvents)
-    .values({ workspaceId, runId, sequence: run.sequence, type, message });
+    .values({
+      workspaceId,
+      runId,
+      sequence: sql`(select event_sequence from agent_runs where workspace_id = ${workspaceId} and id = ${runId})`,
+      type,
+      message,
+    });
 }
 
 export async function admitAssignment(
@@ -398,7 +403,7 @@ export async function admitAssignment(
   if (Buffer.byteLength(parsed.prompt) > 16_384)
     throw new AppError(400, "The assignment can be at most 16 KB.");
   const payloadHash = hash(JSON.stringify(parsed));
-  const runId = await db.transaction(async (tx) => {
+  const runId = await db.atomic(async (tx) => {
     await lockWorkspace(tx, actor.id, workspaceId);
     const [prior] = await tx
       .select()
@@ -500,55 +505,47 @@ export async function admitAssignment(
     const id = randomUUID(),
       threadId = randomUUID(),
       assignmentId = randomUUID();
-    await tx
-      .insert(agentThreads)
-      .values({
-        workspaceId,
-        id: threadId,
-        agentId: agent.id,
-        ownerId: actor.id,
-        title: parsed.outputTitle,
-      });
-    await tx
-      .insert(agentAssignments)
-      .values({
-        workspaceId,
-        id: assignmentId,
-        threadId,
-        agentId: agent.id,
-        ownerId: actor.id,
-        operationKey: parsed.operationKey,
-        payloadHash,
-        prompt: parsed.prompt,
-        outputTitle: parsed.outputTitle,
-        projectId: parsed.projectId ?? null,
-      });
-    await tx
-      .insert(agentRuns)
-      .values({
-        workspaceId,
-        id,
-        assignmentId,
-        agentConfiguration: configuration,
-        sources,
-        context,
-        provider: settings.kind,
-        model: settings.model,
-        providerFingerprint: settings.fingerprint,
-        requestId: randomUUID(),
-        limits,
-        inputTokenUpperBound,
-      });
-    await tx
-      .insert(agentMessages)
-      .values({
-        workspaceId,
-        id: randomUUID(),
-        threadId,
-        runId: id,
-        role: "user",
-        content: parsed.prompt,
-      });
+    await tx.insert(agentThreads).values({
+      workspaceId,
+      id: threadId,
+      agentId: agent.id,
+      ownerId: actor.id,
+      title: parsed.outputTitle,
+    });
+    await tx.insert(agentAssignments).values({
+      workspaceId,
+      id: assignmentId,
+      threadId,
+      agentId: agent.id,
+      ownerId: actor.id,
+      operationKey: parsed.operationKey,
+      payloadHash,
+      prompt: parsed.prompt,
+      outputTitle: parsed.outputTitle,
+      projectId: parsed.projectId ?? null,
+    });
+    await tx.insert(agentRuns).values({
+      workspaceId,
+      id,
+      assignmentId,
+      agentConfiguration: configuration,
+      sources,
+      context,
+      provider: settings.kind,
+      model: settings.model,
+      providerFingerprint: settings.fingerprint,
+      requestId: randomUUID(),
+      limits,
+      inputTokenUpperBound,
+    });
+    await tx.insert(agentMessages).values({
+      workspaceId,
+      id: randomUUID(),
+      threadId,
+      runId: id,
+      role: "user",
+      content: parsed.prompt,
+    });
     await addRunEvent(
       tx,
       workspaceId,
@@ -589,72 +586,69 @@ export async function getAgentRun(
 ): Promise<AgentRun> {
   idSchema.parse(runId);
   await requireWorkspace(db, actor.id, workspaceId);
-  // A transaction gives the transcript, cursor, and status one consistent snapshot on both adapters.
-  return db.transaction(
-    async (tx) => {
-      const { run, assignment } = await loadRun(tx, workspaceId, runId);
-      if (assignment.ownerId !== actor.id) throw notFound();
-      const messages = await tx
-        .select()
-        .from(agentMessages)
-        .where(
-          and(
-            eq(agentMessages.workspaceId, workspaceId),
-            eq(agentMessages.runId, runId),
-          ),
-        )
-        .orderBy(asc(agentMessages.createdAt));
-      const events = await tx
-        .select()
-        .from(agentRunEvents)
-        .where(
-          and(
-            eq(agentRunEvents.workspaceId, workspaceId),
-            eq(agentRunEvents.runId, runId),
-          ),
-        )
-        .orderBy(asc(agentRunEvents.sequence));
-      return {
-        id: run.id,
-        threadId: assignment.threadId,
-        assignmentId: assignment.id,
-        agentId: assignment.agentId,
-        agentName: run.agentConfiguration.name,
-        prompt: assignment.prompt,
-        outputTitle: assignment.outputTitle,
-        status: run.status,
-        assignmentStatus: assignment.status,
-        provider: run.provider,
-        model: run.model,
-        sources: run.sources,
-        limits: run.limits,
-        steps: run.steps,
-        attempt: run.attempt,
-        inputTokens: run.inputTokens,
-        outputTokens: run.outputTokens,
-        inputTokenUpperBound: run.inputTokenUpperBound,
-        outputText: run.outputText,
-        errorCode: run.errorCode,
-        errorMessage: run.errorMessage,
-        resultDocumentId: run.resultDocumentId,
-        createdAt: run.createdAt.toISOString(),
-        finishedAt: run.finishedAt?.toISOString() ?? null,
-        messages: messages.map(({ id, role, content, createdAt }) => ({
-          id,
-          role,
-          content,
-          createdAt: createdAt.toISOString(),
-        })),
-        events: events.map(({ sequence, type, message, createdAt }) => ({
-          sequence,
-          type,
-          message,
-          createdAt: createdAt.toISOString(),
-        })),
-      };
-    },
-    { isolationLevel: "repeatable read", accessMode: "read only" },
-  );
+  // The atomic read revision gives transcript, cursor and status one consistent snapshot.
+  return db.atomic(async (tx) => {
+    const { run, assignment } = await loadRun(tx, workspaceId, runId);
+    if (assignment.ownerId !== actor.id) throw notFound();
+    const messages = await tx
+      .select()
+      .from(agentMessages)
+      .where(
+        and(
+          eq(agentMessages.workspaceId, workspaceId),
+          eq(agentMessages.runId, runId),
+        ),
+      )
+      .orderBy(asc(agentMessages.createdAt));
+    const events = await tx
+      .select()
+      .from(agentRunEvents)
+      .where(
+        and(
+          eq(agentRunEvents.workspaceId, workspaceId),
+          eq(agentRunEvents.runId, runId),
+        ),
+      )
+      .orderBy(asc(agentRunEvents.sequence));
+    return {
+      id: run.id,
+      threadId: assignment.threadId,
+      assignmentId: assignment.id,
+      agentId: assignment.agentId,
+      agentName: run.agentConfiguration.name,
+      prompt: assignment.prompt,
+      outputTitle: assignment.outputTitle,
+      status: run.status,
+      assignmentStatus: assignment.status,
+      provider: run.provider,
+      model: run.model,
+      sources: run.sources,
+      limits: run.limits,
+      steps: run.steps,
+      attempt: run.attempt,
+      inputTokens: run.inputTokens,
+      outputTokens: run.outputTokens,
+      inputTokenUpperBound: run.inputTokenUpperBound,
+      outputText: run.outputText,
+      errorCode: run.errorCode,
+      errorMessage: run.errorMessage,
+      resultDocumentId: run.resultDocumentId,
+      createdAt: run.createdAt.toISOString(),
+      finishedAt: run.finishedAt?.toISOString() ?? null,
+      messages: messages.map(({ id, role, content, createdAt }) => ({
+        id,
+        role,
+        content,
+        createdAt: createdAt.toISOString(),
+      })),
+      events: events.map(({ sequence, type, message, createdAt }) => ({
+        sequence,
+        type,
+        message,
+        createdAt: createdAt.toISOString(),
+      })),
+    };
+  });
 }
 
 export async function listAgentRuns(
@@ -738,7 +732,7 @@ export async function cancelAgentRun(
   runId: string,
 ) {
   idSchema.parse(runId);
-  await db.transaction(async (tx) => {
+  await db.atomic(async (tx) => {
     await lockWorkspace(tx, actor.id, workspaceId);
     const job = await loadRun(tx, workspaceId, runId);
     if (job.assignment.ownerId !== actor.id) throw notFound();
@@ -794,7 +788,7 @@ export async function saveAgentResult(
   runId: string,
 ) {
   idSchema.parse(runId);
-  await db.transaction(async (tx) => {
+  await db.atomic(async (tx) => {
     await lockWorkspace(tx, actor.id, workspaceId);
     const { run, assignment } = await loadRun(tx, workspaceId, runId);
     if (assignment.ownerId !== actor.id) throw notFound();
@@ -816,24 +810,20 @@ export async function saveAgentResult(
         "RESOURCE_LIMIT",
       );
     const id = randomUUID();
-    await tx
-      .insert(documents)
-      .values({
-        id,
-        workspaceId,
-        title: assignment.outputTitle,
-        projectId: assignment.projectId,
-        sourceRunId: run.id,
-      });
-    await tx
-      .insert(documentVersions)
-      .values({
-        workspaceId,
-        documentId: id,
-        revision: 1,
-        content: resultContent(run, assignment),
-        authorId: actor.id,
-      });
+    await tx.insert(documents).values({
+      id,
+      workspaceId,
+      title: assignment.outputTitle,
+      projectId: assignment.projectId,
+      sourceRunId: run.id,
+    });
+    await tx.insert(documentVersions).values({
+      workspaceId,
+      documentId: id,
+      revision: 1,
+      content: resultContent(run, assignment),
+      authorId: actor.id,
+    });
     await tx
       .update(agentRuns)
       .set({ resultDocumentId: id })

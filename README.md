@@ -12,13 +12,11 @@ Bootstrap will support two deployment paths: a complete self-hosted open-source 
 
 ## Run locally
 
-Use Node.js 22.16 or later (tested with Node.js 24) and pnpm 11.25.0.
+Use Node.js 24 or later and pnpm 11.25.0.
 
 ```sh
 git clone https://github.com/t3grp/bootstrap.git
 cd bootstrap
-# Until the implementation PR is merged:
-git switch feat/agent-execution
 pnpm install --frozen-lockfile
 pnpm init:local
 pnpm dev
@@ -29,9 +27,9 @@ settings and prints a setup token. Use that token to create the instance owner
 and first workspace. Registration then closes. An existing `.env.local` is never
 overwritten by the initializer.
 
-Local development uses PGlite, a PostgreSQL engine persisted in the ignored
-`.bootstrap/` directory. No external database, AI key, Composio account, or paid
-subscription is needed for manual work. Production uses PostgreSQL.
+Local development uses SQLite in the ignored `.bootstrap/` directory. Cloudflare
+hosting uses D1 for application records and R2 for files; no external database is
+required. Manual work needs no AI key, Composio account, or paid subscription.
 
 ## Available in this build
 
@@ -72,9 +70,9 @@ Browser tests start a production standalone build on `127.0.0.1:3100`, use a new
 temporary database with test-only credentials, and clean up afterward. They do
 not connect to an inherited `DATABASE_URL`. See [build status](docs/build-status.md)
 for evidence and remaining gates, and [self-hosting](docs/self-hosting.md) for
-PostgreSQL, private storage, and container setup. The
+SQLite, private storage, and container setup. The
 [Cloudflare deployment guide](docs/cloudflare-deployment.md) covers the Container
-target, private R2 uploads, required PostgreSQL connection, and manual deployment.
+target, D1 records, private R2 uploads, and manual deployment.
 
 To exercise assignments without making AI requests, add these settings to
 `apps/web/.env.local`, restart `pnpm dev`, save an agent’s instructions and Files/Tables
@@ -86,7 +84,7 @@ BOOTSTRAP_ENABLE_TEST_PROVIDER=true
 ```
 
 See [agent execution](docs/agent-execution.md) for the complete acceptance flow,
-live-provider configuration, separate PostgreSQL worker, recovery rules, and limits.
+live-provider configuration, separate D1/SQLite worker, recovery rules, and limits.
 
 ## Product specifications
 

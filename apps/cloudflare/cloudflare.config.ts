@@ -34,7 +34,10 @@ export default defineConfig({
       FILES: bindings.r2({
         name: process.env.BOOTSTRAP_R2_BUCKET || "bootstrap-private-files",
       }),
-      DATABASE_URL: bindings.secret(),
+      DB: bindings.d1({
+        id: process.env.BOOTSTRAP_D1_DATABASE_ID,
+        name: process.env.BOOTSTRAP_D1_DATABASE || "bootstrap-workspace",
+      }),
       BETTER_AUTH_URL: bindings.secret(),
       BETTER_AUTH_SECRET: bindings.secret(),
       BOOTSTRAP_SETUP_TOKEN: bindings.secret(),

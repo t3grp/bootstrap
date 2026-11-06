@@ -1,15 +1,13 @@
+import { sql } from "drizzle-orm";
 import {
-  boolean,
   foreignKey,
   index,
   integer,
-  jsonb,
-  pgTable,
+  sqliteTable,
   primaryKey,
   text,
-  timestamp,
   uniqueIndex,
-} from "drizzle-orm/pg-core";
+} from "drizzle-orm/sqlite-core";
 import type {
   Agent,
   AgentConfiguration,
@@ -22,32 +20,38 @@ import type {
 } from "@bootstrap/core";
 
 // Better Auth's core schema. No public registration or social providers are enabled.
-export const user = pgTable("user", {
+export const user = sqliteTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  emailVerified: boolean("email_verified").notNull().default(false),
+  emailVerified: integer("email_verified", { mode: "boolean" })
+    .notNull()
+    .default(false),
   image: text("image"),
-  createdAt: timestamp("created_at", { withTimezone: true })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .default(sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .notNull()
-    .defaultNow(),
+    .default(sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`),
 });
 
-export const session = pgTable(
+export const session = sqliteTable(
   "session",
   {
     id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     token: text("token").notNull().unique(),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
     userId: text("user_id")
@@ -57,7 +61,7 @@ export const session = pgTable(
   (table) => [index("session_user_idx").on(table.userId)],
 );
 
-export const account = pgTable(
+export const account = sqliteTable(
   "account",
   {
     id: text("id").primaryKey(),
@@ -69,20 +73,24 @@ export const account = pgTable(
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at", {
-      withTimezone: true,
+    accessTokenExpiresAt: integer("access_token_expires_at", {
+      mode: "timestamp_ms",
     }),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", {
-      withTimezone: true,
+    refreshTokenExpiresAt: integer("refresh_token_expires_at", {
+      mode: "timestamp_ms",
     }),
     scope: text("scope"),
     password: text("password"),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
   },
   (table) => [
     uniqueIndex("account_provider_identity_idx").on(
@@ -92,42 +100,46 @@ export const account = pgTable(
   ],
 );
 
-export const verification = pgTable(
+export const verification = sqliteTable(
   "verification",
   {
     id: text("id").primaryKey(),
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
-    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
+    updatedAt: integer("updated_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
   },
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
-export const instance = pgTable("instance", {
+export const instance = sqliteTable("instance", {
   id: text("id").primaryKey(),
   ownerId: text("owner_id")
     .notNull()
     .references(() => user.id),
-  createdAt: timestamp("created_at", { withTimezone: true })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
-    .defaultNow(),
+    .default(sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`),
 });
 
-export const workspaces = pgTable("workspaces", {
+export const workspaces = sqliteTable("workspaces", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
-    .defaultNow(),
+    .default(sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`),
 });
 
-export const memberships = pgTable(
+export const memberships = sqliteTable(
   "memberships",
   {
     workspaceId: text("workspace_id")
@@ -146,15 +158,15 @@ const resourceIdentity = () => ({
   workspaceId: text("workspace_id")
     .notNull()
     .references(() => workspaces.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { withTimezone: true })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .default(sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .notNull()
-    .defaultNow(),
+    .default(sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`),
 });
 
-export const projects = pgTable(
+export const projects = sqliteTable(
   "projects",
   {
     ...resourceIdentity(),
@@ -165,7 +177,7 @@ export const projects = pgTable(
   (table) => [primaryKey({ columns: [table.workspaceId, table.id] })],
 );
 
-export const documents = pgTable(
+export const documents = sqliteTable(
   "documents",
   {
     ...resourceIdentity(),
@@ -178,10 +190,12 @@ export const documents = pgTable(
       .notNull()
       .default("page"),
     revision: integer("revision").notNull().default(1),
-    favorite: boolean("favorite").notNull().default(false),
-    fullWidth: boolean("full_width").notNull().default(false),
+    favorite: integer("favorite", { mode: "boolean" }).notNull().default(false),
+    fullWidth: integer("full_width", { mode: "boolean" })
+      .notNull()
+      .default(false),
     sortOrder: integer("sort_order").notNull().default(0),
-    trashedAt: timestamp("trashed_at", { withTimezone: true }),
+    trashedAt: integer("trashed_at", { mode: "timestamp_ms" }),
     trashBatchId: text("trash_batch_id"),
   },
   (table) => [
@@ -199,20 +213,22 @@ export const documents = pgTable(
   ],
 );
 
-export const documentVersions = pgTable(
+export const documentVersions = sqliteTable(
   "document_versions",
   {
     workspaceId: text("workspace_id").notNull(),
     documentId: text("document_id").notNull(),
     revision: integer("revision").notNull(),
     schemaVersion: integer("schema_version").notNull().default(1),
-    content: jsonb("content").$type<PageContent>().notNull(),
+    content: text("content", { mode: "json" }).$type<PageContent>().notNull(),
     authorId: text("author_id")
       .notNull()
       .references(() => user.id),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
   },
   (table) => [
     primaryKey({
@@ -226,7 +242,7 @@ export const documentVersions = pgTable(
   ],
 );
 
-export const tasks = pgTable(
+export const tasks = sqliteTable(
   "tasks",
   {
     ...resourceIdentity(),
@@ -252,20 +268,20 @@ export const tasks = pgTable(
   ],
 );
 
-export const businessTables = pgTable(
+export const businessTables = sqliteTable(
   "business_tables",
   {
     ...resourceIdentity(),
     name: text("name").notNull(),
     description: text("description").notNull().default(""),
     revision: integer("revision").notNull().default(1),
-    columns: jsonb("columns").$type<TableColumn[]>().notNull(),
-    rows: jsonb("rows").$type<TableRow[]>().notNull(),
+    columns: text("columns", { mode: "json" }).$type<TableColumn[]>().notNull(),
+    rows: text("rows", { mode: "json" }).$type<TableRow[]>().notNull(),
   },
   (table) => [primaryKey({ columns: [table.workspaceId, table.id] })],
 );
 
-export const files = pgTable(
+export const files = sqliteTable(
   "files",
   {
     ...resourceIdentity(),
@@ -278,7 +294,7 @@ export const files = pgTable(
   (table) => [primaryKey({ columns: [table.workspaceId, table.id] })],
 );
 
-export const agents = pgTable(
+export const agents = sqliteTable(
   "agents",
   {
     ...resourceIdentity(),
@@ -287,25 +303,37 @@ export const agents = pgTable(
     description: text("description").notNull().default(""),
     color: text("color").notNull().default("#6366f1"),
     instructions: text("instructions").notNull().default(""),
-    skills: jsonb("skills").$type<Agent["skills"]>().notNull().default([]),
-    routines: jsonb("routines")
+    skills: text("skills", { mode: "json" })
+      .$type<Agent["skills"]>()
+      .notNull()
+      .default([]),
+    routines: text("routines", { mode: "json" })
       .$type<Agent["routines"]>()
       .notNull()
       .default([]),
-    memories: jsonb("memories")
+    memories: text("memories", { mode: "json" })
       .$type<Agent["memories"]>()
       .notNull()
       .default([]),
-    fileIds: jsonb("file_ids").$type<string[]>().notNull().default([]),
-    tableIds: jsonb("table_ids").$type<string[]>().notNull().default([]),
-    pageIds: jsonb("page_ids").$type<string[]>().notNull().default([]),
+    fileIds: text("file_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    tableIds: text("table_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    pageIds: text("page_ids", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
   },
   (table) => [primaryKey({ columns: [table.workspaceId, table.id] })],
 );
 
 // History deliberately survives agent deletion. The worker always resolves the live agent
 // again before dispatch; a historical agent ID is never an authorization credential.
-export const agentThreads = pgTable(
+export const agentThreads = sqliteTable(
   "agent_threads",
   {
     ...resourceIdentity(),
@@ -318,7 +346,7 @@ export const agentThreads = pgTable(
   (table) => [primaryKey({ columns: [table.workspaceId, table.id] })],
 );
 
-export const agentAssignments = pgTable(
+export const agentAssignments = sqliteTable(
   "agent_assignments",
   {
     ...resourceIdentity(),
@@ -363,7 +391,7 @@ export const agentAssignments = pgTable(
   ],
 );
 
-export const agentRuns = pgTable(
+export const agentRuns = sqliteTable(
   "agent_runs",
   {
     ...resourceIdentity(),
@@ -374,24 +402,24 @@ export const agentRuns = pgTable(
     })
       .notNull()
       .default("prepared"),
-    agentConfiguration: jsonb("agent_configuration")
+    agentConfiguration: text("agent_configuration", { mode: "json" })
       .$type<AgentConfiguration>()
       .notNull(),
-    sources: jsonb("sources").$type<RunSource[]>().notNull(),
+    sources: text("sources", { mode: "json" }).$type<RunSource[]>().notNull(),
     context: text("context").notNull(),
     provider: text("provider", {
       enum: ["deterministic", "openai-compatible"],
     }).notNull(),
     model: text("model").notNull(),
     providerFingerprint: text("provider_fingerprint").notNull(),
-    limits: jsonb("limits").$type<RunLimits>().notNull(),
+    limits: text("limits", { mode: "json" }).$type<RunLimits>().notNull(),
     requestId: text("request_id").notNull(),
     steps: integer("steps").notNull().default(0),
     attempt: integer("attempt").notNull().default(0),
     epoch: integer("epoch").notNull().default(0),
     leaseOwner: text("lease_owner"),
-    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
-    deadlineAt: timestamp("deadline_at", { withTimezone: true }),
+    leaseExpiresAt: integer("lease_expires_at", { mode: "timestamp_ms" }),
+    deadlineAt: integer("deadline_at", { mode: "timestamp_ms" }),
     eventSequence: integer("event_sequence").notNull().default(0),
     inputTokenUpperBound: integer("input_token_upper_bound").notNull(),
     inputTokens: integer("input_tokens"),
@@ -400,7 +428,7 @@ export const agentRuns = pgTable(
     errorCode: text("error_code"),
     errorMessage: text("error_message"),
     resultDocumentId: text("result_document_id"),
-    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    finishedAt: integer("finished_at", { mode: "timestamp_ms" }),
   },
   (table) => [
     primaryKey({ columns: [table.workspaceId, table.id] }),
@@ -420,7 +448,7 @@ export const agentRuns = pgTable(
   ],
 );
 
-export const agentMessages = pgTable(
+export const agentMessages = sqliteTable(
   "agent_messages",
   {
     ...resourceIdentity(),
@@ -447,7 +475,7 @@ export const agentMessages = pgTable(
   ],
 );
 
-export const agentRunEvents = pgTable(
+export const agentRunEvents = sqliteTable(
   "agent_run_events",
   {
     workspaceId: text("workspace_id").notNull(),
@@ -455,9 +483,11 @@ export const agentRunEvents = pgTable(
     sequence: integer("sequence").notNull(),
     type: text("type").notNull(),
     message: text("message").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
-      .defaultNow(),
+      .default(
+        sql`(cast((julianday('now') - 2440587.5) * 86400000 as integer))`,
+      ),
   },
   (table) => [
     primaryKey({ columns: [table.workspaceId, table.runId, table.sequence] }),

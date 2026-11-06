@@ -92,3 +92,12 @@ A visual workflow canvas, arbitrary code/browser/MCP execution, a skill marketpl
 Start with a Postgres queue and simple container operations. Reconsider a larger workflow engine or orchestration platform only when measured needs justify it; neither removes the need to reconcile external actions or provider charges.
 
 Bootstrap's open-source core includes workspace resources, agent configuration and communication, permissions, routines, and integration adapters. The managed service sells operation and convenience. External model and connected-service providers can have their own charges and availability limits; disclose those distinctions in setup and usage screens.
+
+## Adopted Cloudflare database decision — 6 November 2026
+
+The owner approved Cloudflare D1 for structured records and R2 for private files.
+This supersedes the initial PostgreSQL hosting proposal in the earlier design
+documents. The existing Node application and worker remain in one Cloudflare
+Container. SQLite supplies the same schema for local/Docker installations. Atomic
+D1 batches with revision guards replace PostgreSQL row/advisory locks. See
+[Cloudflare deployment](cloudflare-deployment.md) for implementation and limitations.
