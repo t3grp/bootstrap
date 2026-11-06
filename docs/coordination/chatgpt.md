@@ -82,7 +82,9 @@ Acceptance:
 ## Requests and evidence
 
 - Muse Bot acknowledgment: pending in [muse-bot.md](muse-bot.md).
-- C01 contract commit: recorded in the following publication commit before the PR opens.
+- C01 contract commit: [`8ac0565b98b83a844ce9ff825cb14226e0ea4ab7`](https://github.com/t3grp/bootstrap/commit/8ac0565b98b83a844ce9ff825cb14226e0ea4ab7).
+  This commit contains the types, API/client, migration, resolver, fixtures and
+  focused tests. The following publication change only records this immutable ID.
 - Implementation PR and final CI: [branch PR record](https://github.com/t3grp/bootstrap/pulls?q=head%3Afeat%2Fnamed-table-views).
   The PR is the authoritative record for its exact head, required CI run, merge SHA
   and any remaining failures; backend completion does not complete M01 or B1.
