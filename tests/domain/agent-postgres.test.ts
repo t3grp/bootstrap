@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
 import { once } from "node:events";
+import { cp, mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import {
   afterAll,
@@ -46,6 +48,7 @@ let a: DatabaseConnection,
   b: DatabaseConnection,
   workspaceId: string,
   input: AssignmentInput;
+let isolatedBundle: string | undefined;
 const children = new Set<ChildProcess>();
 async function stop(child: ChildProcess, signal: NodeJS.Signals = "SIGTERM") {
   if (child.exitCode === null && child.signalCode === null) {
@@ -58,13 +61,14 @@ async function stop(child: ChildProcess, signal: NodeJS.Signals = "SIGTERM") {
 function worker(delayMs: number) {
   const args =
     process.env.BOOTSTRAP_TEST_BUILT_WORKER === "true"
-      ? [path.resolve("apps/web/.next/standalone/worker.mjs")]
+      ? [path.join(isolatedBundle!, "worker.mjs")]
       : ["--import", "tsx", path.resolve("apps/worker/src/index.ts")];
   const child = spawn(process.execPath, args, {
-    cwd: process.cwd(),
+    cwd: isolatedBundle ?? process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
     env: {
       ...process.env,
+      NODE_PATH: "",
       DATABASE_URL: url!,
       BOOTSTRAP_MODEL_PROVIDER: "deterministic",
       BOOTSTRAP_ENABLE_TEST_PROVIDER: "true",
@@ -95,6 +99,15 @@ describe.skipIf(!url)("PostgreSQL concurrency and real worker restart", () => {
     a = await createDatabase({ url });
     b = await createDatabase({ url });
     await a.db.insert(schema.user).values(owner);
+    if (process.env.BOOTSTRAP_TEST_BUILT_WORKER === "true") {
+      isolatedBundle = await mkdtemp(
+        path.join(os.tmpdir(), "bootstrap-worker-bundle-"),
+      );
+      await cp(path.resolve("apps/web/.next/standalone"), isolatedBundle, {
+        recursive: true,
+        verbatimSymlinks: true,
+      });
+    }
   });
   beforeEach(async () => {
     await a.db.execute(sql`TRUNCATE TABLE workspaces CASCADE`);
@@ -123,6 +136,8 @@ describe.skipIf(!url)("PostgreSQL concurrency and real worker restart", () => {
     for (const child of children) await stop(child, "SIGKILL");
     await a?.close();
     await b?.close();
+    if (isolatedBundle)
+      await rm(isolatedBundle, { recursive: true, force: true });
   });
 
   it("serializes admission, worker claims, and result acceptance across independent pools", async () => {

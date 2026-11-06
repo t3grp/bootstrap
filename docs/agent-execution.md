@@ -199,7 +199,9 @@ pnpm exec playwright test tests/e2e/agent-execution.spec.ts
 ```
 
 CI also starts a dedicated PostgreSQL 17 service. Two independent pools race
-admission, claims, and saves. A real built worker process is killed during streaming;
+admission, claims, and saves. The standalone bundle is copied outside the checkout
+so it cannot resolve missing packages from development dependencies. A real built
+worker process from that isolated copy is killed during streaming;
 a replacement process recovers the same deterministic run and produces one result.
 The PostgreSQL tests refuse non-loopback URLs or database names other than
 `bootstrap_test`. To run them locally against a disposable database:

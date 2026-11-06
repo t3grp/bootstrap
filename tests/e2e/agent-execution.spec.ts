@@ -101,7 +101,7 @@ test("owner selects a specialist and sources, sees streaming progress, saves, an
     .locator(".agent-card")
     .filter({ hasText: "Customer researcher" })
     .click();
-  await page.getByRole("tab", { name: "Assignments", exact: true }).click();
+  await page.getByRole("button", { name: "Assignments", exact: true }).click();
   await expect(
     page.getByText(/Deterministic test provider — fixture output/),
   ).toBeVisible();

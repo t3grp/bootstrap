@@ -33,9 +33,9 @@ const tabs = [
   "Memories",
   "Files",
   "Tables",
-  "Assignments",
 ] as const;
-type Tab = (typeof tabs)[number];
+type PropertyTab = (typeof tabs)[number];
+type Tab = PropertyTab | "Assignments";
 type Mutate = (command: WorkspaceCommand) => Promise<WorkspaceSnapshot>;
 
 export function AgentSurface({
@@ -179,6 +179,29 @@ export function AgentSurface({
           <p>{draft.role || "A specialist for your business"}</p>
         </div>
         <StatusBadge tone="violet">Configured</StatusBadge>
+        <Button
+          variant={tab === "Assignments" ? "secondary" : "primary"}
+          disabled={busy}
+          onClick={() => {
+            if (tab === "Assignments") {
+              const url = new URL(window.location.href);
+              url.searchParams.delete("chat");
+              url.searchParams.delete("run");
+              window.history.replaceState(window.history.state, "", url);
+              setTab("Instructions");
+            } else {
+              void save().then((saved) => {
+                if (!saved) return;
+                const url = new URL(window.location.href);
+                url.searchParams.set("chat", "1");
+                window.history.replaceState(window.history.state, "", url);
+                setTab("Assignments");
+              });
+            }
+          }}
+        >
+          {tab === "Assignments" ? "Agent properties" : "Assignments"}
+        </Button>
       </div>
       <div className="agent-availability">
         <Sparkles size={17} />
@@ -188,30 +211,19 @@ export function AgentSurface({
           Scheduled runs and connected tools are not active.
         </p>
       </div>
-      <Tabs<Tab>
-        items={tabs}
-        active={tab}
-        onChange={(next) => {
-          if (next === "Assignments") {
-            void save().then((saved) => {
-              if (saved) {
-                const url = new URL(window.location.href);
-                url.searchParams.set("chat", "1");
-                window.history.replaceState(window.history.state, "", url);
-                setTab(next);
-              }
-            });
-          } else {
-            const url = new URL(window.location.href);
-            url.searchParams.delete("chat");
-            url.searchParams.delete("run");
-            window.history.replaceState(window.history.state, "", url);
-            setTab(next);
-          }
-        }}
-        label="Agent properties"
-      />
-      <div className="agent-property-panel" role="tabpanel" aria-label={tab}>
+      {tab !== "Assignments" && (
+        <Tabs<PropertyTab>
+          items={tabs}
+          active={tab}
+          onChange={setTab}
+          label="Agent properties"
+        />
+      )}
+      <div
+        className="agent-property-panel"
+        role={tab === "Assignments" ? "region" : "tabpanel"}
+        aria-label={tab}
+      >
         {tab === "Assignments" && (
           <AgentChat
             agent={draft}
