@@ -1,0 +1,55 @@
+services:
+  web:
+    build: .
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      BOOTSTRAP_ALLOW_LOCAL_DATABASE: "true"
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set a random authentication secret}
+      BOOTSTRAP_SETUP_TOKEN: ${BOOTSTRAP_SETUP_TOKEN:?Set a separate random setup token}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
+      BOOTSTRAP_DATA_DIR: /var/lib/bootstrap
+      BOOTSTRAP_AGENT_WORKER: external
+      BOOTSTRAP_MODEL_PROVIDER: ${BOOTSTRAP_MODEL_PROVIDER:-}
+      BOOTSTRAP_ENABLE_TEST_PROVIDER: ${BOOTSTRAP_ENABLE_TEST_PROVIDER:-false}
+      BOOTSTRAP_MODEL_BASE_URL: ${BOOTSTRAP_MODEL_BASE_URL:-}
+      BOOTSTRAP_MODEL_ID: ${BOOTSTRAP_MODEL_ID:-}
+      BOOTSTRAP_MODEL_API_KEY: ${BOOTSTRAP_MODEL_API_KEY:-}
+      BOOTSTRAP_AGENT_MAX_INPUT_TOKENS: ${BOOTSTRAP_AGENT_MAX_INPUT_TOKENS:-16000}
+      BOOTSTRAP_AGENT_MAX_OUTPUT_TOKENS: ${BOOTSTRAP_AGENT_MAX_OUTPUT_TOKENS:-2048}
+      BOOTSTRAP_AGENT_TIMEOUT_MS: ${BOOTSTRAP_AGENT_TIMEOUT_MS:-120000}
+    volumes:
+      - private-files:/var/lib/bootstrap
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: ["node", "worker.mjs"]
+    environment:
+      BOOTSTRAP_ALLOW_LOCAL_DATABASE: "true"
+      BOOTSTRAP_DATA_DIR: /var/lib/bootstrap
+      BOOTSTRAP_MODEL_PROVIDER: ${BOOTSTRAP_MODEL_PROVIDER:-}
+      BOOTSTRAP_ENABLE_TEST_PROVIDER: ${BOOTSTRAP_ENABLE_TEST_PROVIDER:-false}
+      BOOTSTRAP_MODEL_BASE_URL: ${BOOTSTRAP_MODEL_BASE_URL:-}
+      BOOTSTRAP_MODEL_ID: ${BOOTSTRAP_MODEL_ID:-}
+      BOOTSTRAP_MODEL_API_KEY: ${BOOTSTRAP_MODEL_API_KEY:-}
+      BOOTSTRAP_AGENT_MAX_INPUT_TOKENS: ${BOOTSTRAP_AGENT_MAX_INPUT_TOKENS:-16000}
+      BOOTSTRAP_AGENT_MAX_OUTPUT_TOKENS: ${BOOTSTRAP_AGENT_MAX_OUTPUT_TOKENS:-2048}
+      BOOTSTRAP_AGENT_TIMEOUT_MS: ${BOOTSTRAP_AGENT_TIMEOUT_MS:-120000}
+    volumes:
+      - private-files:/var/lib/bootstrap
+    restart: unless-stopped
+
+volumes:
+  private-files:

@@ -1,0 +1,9 @@
+Bootstrap
+Copyright 2026 Bootstrap contributors
+
+Newly authored Bootstrap application code is provided under Apache License 2.0.
+Third-party packages and assets retain their own licenses. See
+THIRD_PARTY_NOTICES.md and licenses/ for selected distributed asset notices.
+
+Bootstrap's workspace is an original implementation informed by the product's
+AffectUI and BeUI design references. No Openbot source is included.

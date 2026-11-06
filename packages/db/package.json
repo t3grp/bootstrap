@@ -1,0 +1,13 @@
+{
+  "name": "@bootstrap/db",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@bootstrap/core": "workspace:*",
+    "drizzle-orm": "0.45.4"
+  }
+}

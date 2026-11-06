@@ -1,0 +1,14 @@
+{
+  "name": "@bootstrap/cloudflare",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json && cf deploy --dry-run",
+    "deploy": "cf deploy"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.11",
+    "vite": "8.3.5"
+  }
+}
