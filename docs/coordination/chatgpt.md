@@ -1,16 +1,18 @@
 # ChatGPT work record
 
-Updated: 6 November 2026, after the D1 integration update and Muse Bot clarification.
+Updated: 6 November 2026, after the owner authorized implementation and merging
+completed work when checks pass and there is no conflict.
 
 ## Current ownership
 
-- Coordination/status documentation: prepared in this chat.
+- Coordination/status documentation: PR #5 merged as `af2bfc43716bf042590ca05e0d0edd9ef1a7b054`.
 - Existing completed delivery: [agent execution PR #3](https://github.com/t3grp/bootstrap/pull/3),
   head `c5a6fa015bd88032cb20d455329a98eef222d3b6`; CI passed; integrated into main
   through PR #4, with PR #3 subsequently closed.
-- Next product task: **C01 — named table views, persistence and contract**.
-- State: **Reserved; blocked on the active D1 persistence handoff; not started**.
-- Implementation branch / base SHA: **not created; record before starting**.
+- Current product task: **C01 — named table views, persistence and contract**.
+- State: **In progress; backend/API only**.
+- Implementation branch: `feat/named-table-views`.
+- Exact base SHA: `af2bfc43716bf042590ca05e0d0edd9ef1a7b054`.
 - Work already owned elsewhere: D01 Cloudflare/deployment and M0 Muse Bot landing page.
 
 ## C01 bounded deliverable
@@ -21,19 +23,23 @@ sort and filter settings; it continues to refer to the existing canonical table.
 Deleting a view or removing an embed must not delete table rows. Existing local
 table revisions and draft/conflict behavior remain intact.
 
-PR #4 changed the database foundation to D1/local SQLite and merged while this
-handoff was being prepared. Wait for that contributor's persistence handoff before
-editing schema or runtime files. Use its guarded atomic-batch design and required
-revision triggers; do not revive the old PostgreSQL/PGlite implementation. Record
-the exact released base and handoff here before starting C01.
+The D1 dependency is resolved by the contributor's published deployment/persistence
+handoff in `main@b97c9637da24073de7415e86f7c678e0251f2b54`, following passing D1 CI
+and deployment. The only open PR at admission was the now-merged coordination PR.
+C01 uses the existing guarded atomic-batch adapter and adds the required revision
+triggers. It does not change the transport, deployment configuration, authentication,
+storage, worker or agent runtime. First-owner production acceptance stays with D01.
 
-Expected path boundary, narrowed again when claimed:
+Claimed paths:
 
-- Shared table-view types in `packages/core/src/`.
-- View persistence/migrations in `packages/db/`.
-- Scoped server commands/reads in `apps/web/src/lib/server/` and API routing.
-- Typed browser API in `apps/web/src/lib/api.ts`.
-- Focused domain/persistence tests.
+- `packages/core/src/table-views.ts` and its export from `packages/core/src/types.ts`.
+- `packages/db/src/schema.ts` and `packages/db/migrations/0002_table_views.sql`.
+- `apps/web/src/lib/server/table-views.ts`.
+- `apps/web/src/app/api/table-views/route.ts` and `[id]/route.ts` beneath it.
+- `apps/web/src/lib/api.ts` for typed client functions.
+- `tests/domain/table-views.test.ts`, `tests/domain/table-views-d1.test.ts`,
+  and API acceptance in `tests/e2e/table-views.spec.ts`.
+- `docs/table-views.md`, this owner record, and board status in `README.md` here.
 
 Do not implement Muse Bot's view picker/dialogs or rewrite the table/editor surface.
 Do not touch D01 storage, HTTP/validation, deployment or dependency changes while

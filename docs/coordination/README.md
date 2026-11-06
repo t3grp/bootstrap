@@ -17,9 +17,10 @@ recurring work, and commercial hosting modules remain to be built.
 - [Implementation plan](../implementation-plan.md): B0–B8 and acceptance identifiers.
 
 Current shared folder:
-<https://github.com/t3grp/bootstrap/tree/docs/bootstrap-module-coordination/docs/coordination>.
-The coordination branch holds these records until they are merged. Implementation
-branches remain separate; do not commit product code to the coordination branch.
+<https://github.com/t3grp/bootstrap/tree/main/docs/coordination>.
+PR #5 merged after the owner authorized merging completed, conflict-free work.
+Active task claims are also published in their named implementation branches
+before code edits. Implementation branches remain separate.
 
 The owner clarified in this chat that **Muspod means Muse Bot**. Use Muse Bot as
 the collaborator name and retain the existing Muse landing-page assignment under
@@ -86,7 +87,7 @@ needs the task's acceptance evidence; merged/deployed status is recorded separat
 
 | Pair | Area | ChatGPT owns | Muse Bot owns | Starting state / dependency |
 | --- | --- | --- | --- | --- |
-| C01 / M01 | B1 named table views | Persisted view model, scoped/versioned API and shared contract; domain tests | View picker, create/rename/delete controls, sort/filter/column configuration and interaction tests | C01 reserved, blocked on active D1 persistence handoff. M01 queued after M0 or an acknowledged resequence; API wiring waits for C01 contract |
+| C01 / M01 | B1 named table views | Persisted view model, scoped/versioned API and shared contract; domain tests | View picker, create/rename/delete controls, sort/filter/column configuration and interaction tests | C01 in progress on `feat/named-table-views`, base `af2bfc4`; published D1 handoff resolves its persistence dependency. M01 stays queued after M0; UI wiring waits for C01 contract |
 | C02 / M02 | B1 page history | Scoped revision list/read/restore with optimistic conflict checks | History panel, revision preview, restore confirmation and recoverable conflict presentation | Queued after C01/M01; agree contract before wiring |
 | C03 / M03 | B8 workspace import | Bounded parser, validation, reference mapping, atomic import and secret exclusion | Import preview/mapping, error review and truthful progress/result UI | Queued; current export/import contract first |
 | C04 / M04 | B2 agent completion | Pinned skills, memory/source rules, finer grants, thread/proposal APIs and execution rules | Corresponding six-property, contextual chat and proposal-review interfaces | Queued; split into one capability per PR when activated |
@@ -102,10 +103,10 @@ needs the task's acceptance evidence; merged/deployed status is recorded separat
 - **D01 — Existing Cloudflare/deployment track:** keep PR #4 with its current
   contributor through live acceptance and its handoff. Neither ChatGPT's new C01
   task nor Muse Bot's UI tasks claim this work. Its merged D1 migration changed
-  database, auth, workspace and agent runtime contracts. C01 must wait for that
-  persistence handoff before schema/runtime edits; do not implement
-  against the superseded PostgreSQL/PGlite model or create a competing migration
-  or deployment branch.
+  database, auth, workspace and agent runtime contracts. The published handoff at
+  `b97c9637da24073de7415e86f7c678e0251f2b54` releases C01's schema extension on the
+  validated D1 adapter. Transport, runtime, storage and deployment changes stay
+  outside C01. Do not revive PostgreSQL/PGlite or create a competing deployment.
 - **M0 — Muse Bot landing page:** retain the original Muse assignment as Muse
   Bot's current priority. ChatGPT will not implement it. M01 is the next proposed
   UI task after M0 is handed off, unless Muse Bot records existing work and an
