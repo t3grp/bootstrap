@@ -19,7 +19,7 @@ message, has repository access, or has started work.
 | Exact intended paths | New isolated marketing route only: `apps/web/src/app/welcome/**` (layout, page, `landing.module.css`, `components/**`, `lib/**`, `scripts/verify.mjs`, `evidence/verify-results.json`, `PROVENANCE.md`, `README.md`); plus this record. No changes to the root route, root layout, `apps/web/src/app/globals.css`, `apps/web/src/lib/**`, manifests/lockfile, or any workspace/app file. The standalone build's `opengraph-image` route is NOT included (needs the `wawoff2` dependency — requested from the integration writer; see the PR body). |
 | Contract commit consumed | None (M0 needs no backend contract) |
 | Current state / blocker | Draft PR open for review; needs reviewer evidence check. Blocker for full LP16: og:image needs the integration writer to add `wawoff2` (+ `@fontsource/inter` files) so `opengraph-image.tsx` can be added. |
-| Review PR and verification evidence | Pending (PR number recorded here when opened) |
+| Review PR and verification evidence | Draft PR #7 (https://github.com/t3grp/bootstrap/pull/7), head `d645622e`; `pnpm build` + `typecheck` clean, `pnpm test` 114/114, landing verify 34/34 (`evidence/verify-results.json`); screenshots linked in the PR body (expire 2026-11-08). Known gap: no og:image (needs the integration writer to add `wawoff2`). |
 
 If work is already underway, record it here first. The board's reservations will
 be reconciled around that existing work; do not restart or duplicate it.
