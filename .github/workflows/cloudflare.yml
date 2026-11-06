@@ -1,0 +1,49 @@
+name: Deploy Bootstrap to Cloudflare
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bootstrap-cloudflare-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      BOOTSTRAP_WORKER_NAME: bootstrap
+      BOOTSTRAP_R2_BUCKET: bootstrap-private-files
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm cloudflare:check
+      - name: Prepare private runtime configuration
+        env:
+          BOOTSTRAP_RUNTIME_SECRETS: ${{ secrets.BOOTSTRAP_RUNTIME_SECRETS }}
+        run: |
+          node --input-type=module <<'JS'
+          import { writeFileSync } from 'node:fs';
+          import path from 'node:path';
+          const values = JSON.parse(process.env.BOOTSTRAP_RUNTIME_SECRETS || '{}');
+          for (const name of ['DATABASE_URL', 'BETTER_AUTH_URL', 'BETTER_AUTH_SECRET', 'BOOTSTRAP_SETUP_TOKEN']) {
+            if (typeof values[name] !== 'string' || !values[name]) throw new Error(`Missing ${name}`);
+          }
+          writeFileSync(path.join(process.env.RUNNER_TEMP, 'bootstrap-secrets.json'), JSON.stringify(values), { mode: 0o600 });
+          JS
+      - name: Build container and deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: pnpm cloudflare:deploy --secrets-file "$RUNNER_TEMP/bootstrap-secrets.json"
+      - name: Remove private runtime configuration
+        if: always()
+        run: rm -f "$RUNNER_TEMP/bootstrap-secrets.json"

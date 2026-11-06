@@ -117,8 +117,9 @@ from this interchange format is a later workspace feature.
 These are validation bounds, not a benchmarked production capacity promise.
 Workspace snapshots currently load current page bodies and table records together;
 paginated/lazy resource loading must precede large deployments. Saved named table
-views, per-field grants, multi-human editing, and object-storage adapters are not
-implemented yet.
+views, per-field grants, and multi-human editing are not implemented yet. A private
+R2 adapter is available for the [Cloudflare Container deployment](cloudflare-deployment.md);
+local and Compose installations retain private filesystem storage by default.
 
 ## Test environment
 

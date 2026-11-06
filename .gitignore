@@ -9,6 +9,8 @@ test-results/
 .env.*
 !.env.example
 .data/
+.cloudflare/
+.dev.vars*
 .bootstrap/
 *.tsbuildinfo
 *.log

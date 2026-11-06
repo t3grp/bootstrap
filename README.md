@@ -72,7 +72,9 @@ Browser tests start a production standalone build on `127.0.0.1:3100`, use a new
 temporary database with test-only credentials, and clean up afterward. They do
 not connect to an inherited `DATABASE_URL`. See [build status](docs/build-status.md)
 for evidence and remaining gates, and [self-hosting](docs/self-hosting.md) for
-PostgreSQL, private storage, and container setup.
+PostgreSQL, private storage, and container setup. The
+[Cloudflare deployment guide](docs/cloudflare-deployment.md) covers the Container
+target, private R2 uploads, required PostgreSQL connection, and manual deployment.
 
 To exercise assignments without making AI requests, add these settings to
 `apps/web/.env.local`, restart `pnpm dev`, save an agent’s instructions and Files/Tables

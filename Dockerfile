@@ -3,6 +3,7 @@ WORKDIR /app
 RUN npm install --global pnpm@11.25.0
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json apps/web/package.json
+COPY apps/cloudflare/package.json apps/cloudflare/package.json
 COPY packages/core/package.json packages/core/package.json
 COPY packages/db/package.json packages/db/package.json
 RUN pnpm install --frozen-lockfile
@@ -20,6 +21,7 @@ ENV NODE_ENV=production \
 COPY --from=build --chown=node:node /app/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build --chown=node:node /app/packages/db/migrations ./packages/db/migrations
+COPY --from=build --chown=node:node /app/scripts/cloudflare-supervisor.mjs ./cloudflare-supervisor.mjs
 RUN mkdir -p /var/lib/bootstrap && chown node:node /var/lib/bootstrap
 USER node
 EXPOSE 3000

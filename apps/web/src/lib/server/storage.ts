@@ -2,12 +2,45 @@ import { randomUUID, createHash } from "node:crypto";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { dataDirectory } from "@bootstrap/db";
+import {
+  FILE_STORAGE_HOST,
+  FILE_STORAGE_KEY,
+} from "../../../../../packages/core/src/file-storage";
 import { AppError } from "./errors";
+import { boundedBody } from "./http";
 import { LIMITS } from "./validation";
 
-function storedPath(key: string) {
-  if (!/^[0-9a-f-]{36}$/.test(key))
+function validateKey(key: string) {
+  if (!FILE_STORAGE_KEY.test(key))
     throw new Error("Invalid internal storage key");
+}
+
+function useCloudflareStorage() {
+  const storage = process.env.BOOTSTRAP_FILE_STORAGE || "local";
+  if (storage !== "local" && storage !== "cloudflare-r2")
+    throw new Error("Unsupported BOOTSTRAP_FILE_STORAGE configuration.");
+  return storage === "cloudflare-r2";
+}
+
+async function cloudflareFile(key: string, init?: RequestInit) {
+  validateKey(key);
+  // This virtual host is intercepted inside the Cloudflare container. It is
+  // never a public file route and needs no R2 credentials in the Node process.
+  const response = await fetch(`http://${FILE_STORAGE_HOST}/files/${key}`, {
+    ...init,
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (response.status === 404)
+    throw new AppError(404, "The stored file could not be found.");
+  if (!response.ok)
+    throw new AppError(503, "Private file storage is unavailable.");
+  return response;
+}
+
+function storedPath(key: string) {
+  validateKey(key);
   return path.join(dataDirectory(), "files", key);
 }
 
@@ -26,9 +59,16 @@ export async function writeStoredFile(file: File) {
   if (!name) throw new AppError(400, "Give this file a name.");
   const bytes = Buffer.from(await file.arrayBuffer());
   const storageKey = randomUUID();
-  const destination = storedPath(storageKey);
-  await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
-  await writeFile(destination, bytes, { mode: 0o600, flag: "wx" });
+  if (useCloudflareStorage()) {
+    await cloudflareFile(storageKey, {
+      method: "PUT",
+      body: new Uint8Array(bytes),
+    });
+  } else {
+    const destination = storedPath(storageKey);
+    await mkdir(path.dirname(destination), { recursive: true, mode: 0o700 });
+    await writeFile(destination, bytes, { mode: 0o600, flag: "wx" });
+  }
   return {
     id: randomUUID(),
     name,
@@ -42,9 +82,17 @@ export async function writeStoredFile(file: File) {
 }
 
 export async function readStoredFile(key: string) {
+  if (useCloudflareStorage()) {
+    const response = await cloudflareFile(key);
+    return Buffer.from(await boundedBody(response, LIMITS.fileBytes));
+  }
   return readFile(storedPath(key));
 }
 export async function removeStoredFile(key: string) {
+  if (useCloudflareStorage()) {
+    await cloudflareFile(key, { method: "DELETE" });
+    return;
+  }
   try {
     await unlink(storedPath(key));
   } catch (error) {

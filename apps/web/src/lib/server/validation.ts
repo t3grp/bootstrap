@@ -7,6 +7,7 @@ import type {
   WorkspaceCommand,
 } from "@bootstrap/core";
 import { AppError } from "./errors";
+import { MAX_FILE_BYTES } from "../../../../../packages/core/src/file-storage";
 
 export const LIMITS = {
   documentBytes: 2 * 1024 * 1024,
@@ -14,7 +15,7 @@ export const LIMITS = {
   documentDepth: 16,
   tableColumns: 50,
   tableRows: 500,
-  fileBytes: 10 * 1024 * 1024,
+  fileBytes: MAX_FILE_BYTES,
   resources: 500,
 } as const;
 export const idSchema = z

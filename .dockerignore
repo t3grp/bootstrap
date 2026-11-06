@@ -3,6 +3,10 @@ node_modules
 .git
 .bootstrap
 .data
+.cloudflare
+**/.cloudflare
+.dev.vars*
+**/.dev.vars*
 **/.next
 **/.env*
 playwright-report

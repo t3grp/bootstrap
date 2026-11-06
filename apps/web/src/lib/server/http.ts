@@ -8,7 +8,10 @@ export function privateJson(value: unknown, status = 200) {
   return Response.json(value, { status, headers: privateHeaders });
 }
 
-export async function boundedBody(request: Request, limit: number) {
+export async function boundedBody(
+  request: Pick<Request, "headers" | "body">,
+  limit: number,
+) {
   const declared = request.headers.get("content-length");
   if (declared && (!/^\d+$/.test(declared) || Number(declared) > limit))
     throw new AppError(413, "This request is too large.", "PAYLOAD_TOO_LARGE");
