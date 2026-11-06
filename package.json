@@ -16,8 +16,8 @@
     "typecheck": "pnpm --filter @bootstrap/web exec next typegen && tsc --noEmit -p apps/web/tsconfig.json",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "cloudflare:check": "pnpm --filter @bootstrap/cloudflare check",
-    "cloudflare:deploy": "pnpm --filter @bootstrap/cloudflare deploy",
+    "cloudflare:check": "tsc --noEmit -p apps/cloudflare/tsconfig.json && pnpm cloudflare:deploy --dry-run",
+    "cloudflare:deploy": "pnpm --filter @bootstrap/cloudflare run deploy",
     "cloudflare:secrets": "node scripts/init-cloudflare.mjs",
     "format": "prettier --write apps packages scripts tests '*.json' '*.ts' '*.yaml' .github"
   },
