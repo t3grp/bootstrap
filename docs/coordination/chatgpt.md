@@ -39,12 +39,20 @@ Claimed paths:
 - `apps/web/src/lib/api.ts` for typed client functions.
 - `tests/domain/table-views.test.ts`, `tests/domain/table-views-d1.test.ts`,
   and API acceptance in `tests/e2e/table-views.spec.ts`.
+- `tests/helpers/d1.ts`, limited to loading all ordered SQL migrations in the
+  existing disposable D1 fixture; the current helper only loads `0001_d1.sql`.
 - `docs/table-views.md`, this owner record, and board status in `README.md` here.
 
 Do not implement Muse Bot's view picker/dialogs or rewrite the table/editor surface.
 Do not touch D01 storage, HTTP/validation, deployment or dependency changes while
 that track remains reserved. A necessary shared-file change must be recorded and
 serialized with its current owner.
+
+Shared-test integration request resolved for C01: no competing PR was open when
+the migration-fixture change was claimed. D01's merged persistence handoff is the
+base. The fixture must apply `0002_table_views.sql` for both domain and HTTP
+acceptance to exercise the deployed schema. Only its migration-loading loop is
+claimed; the D1 binding, transport and lifecycle stay unchanged.
 
 ## Contract handoff to M01
 
