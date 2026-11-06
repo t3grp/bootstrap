@@ -129,9 +129,9 @@ services with a shared private-files volume. Start it with the environment in
 
 The bounded run table is this slice's transactional queue. Admission writes the
 assignment, thread, user message, run, and first event together. Workers select
-eligible rows and serialize claims with the same workspace row lock used by manual
-edits. No transaction stays open during a model request. A separate pg-boss/outbox
-dispatcher is deferred until the later scheduling/messaging slices; the business
+eligible rows and commit claims through the same revision-guarded atomic D1/SQLite
+batch used by manual edits. No transaction stays open during a model request. A
+separate queue/outbox dispatcher is deferred until the later scheduling/messaging slices; the business
 records and fenced leases already own recovery and deduplication.
 
 ## Source access and preservation

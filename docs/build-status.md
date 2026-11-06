@@ -10,7 +10,7 @@ describes the implemented behavior.
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | App            | TypeScript/pnpm workspace, Next.js App Router, shared contracts, production standalone bundle                                   |
 | Owner access   | Better Auth database sessions, token-protected atomic owner bootstrap, closed signup, same-origin writes                        |
-| Persistence    | Drizzle schema/migration, production PostgreSQL adapter, persistent single-process local PGlite                                 |
+| Persistence    | Drizzle SQLite schema, Cloudflare D1 with revision-guarded atomic batches, persistent SQLite for local/Docker use                |
 | Workspace      | Multiple owner workspaces, Everything/Today, projects, tasks, notes, scratchpads                                                |
 | Pages          | Stable-ID blocks, nested tree, favorites, safe moves, autosave, immutable revisions, conflicts, exact subtree trash/restore     |
 | Editor         | Tiptap community editor, slash menu, inline formatting, list/checklist, callout, code, keyboard block actions, typed references |
@@ -22,7 +22,7 @@ describes the implemented behavior.
 | Results        | Owner-reviewed new page, idempotent save, source snapshots, immutable run receipt and history                                   |
 | Export         | Native current-resource JSON, page Markdown, table CSV; no file archive or import                                               |
 | Design         | AffectUI-inspired original shell, licensed BeUI selection primitive, Inter/Lucide notices, responsive UI code                   |
-| Operations     | Container/Compose recipe, health endpoint, checked-in CI and setup scripts                                                      |
+| Operations     | Live Cloudflare Worker/Container, D1 migrations, private R2, Compose recipe, health endpoint, CI and setup scripts              |
 
 ## Verification evidence
 
@@ -55,7 +55,7 @@ and interleaved-revision detection with recoverable drafts.
 - Local Chromium cannot start because this environment denies its process-singleton
   socket. This was observed before navigation; it is not a browser acceptance pass.
   Browser acceptance and screenshots run in GitHub Actions.
-- Final CI includes the existing 45 regressions, the 26 new focused checks, two
+- That slice's CI included the existing 45 regressions, the 26 new focused checks, two
   PostgreSQL integration scenarios, and all seven end-to-end scenarios. PostgreSQL
   uses two independent pools and kills/restarts a real built worker during streaming.
   The new browser scenario covers choose agent → select sources → submit → progress
@@ -72,11 +72,42 @@ and any remaining failures. Local targeted evidence does not substitute for the
 required final CI result. See [agent operation and acceptance](agent-execution.md)
 for reproducible commands and configuration.
 
+### D1 migration and live Cloudflare deployment
+
+[PR #4](https://github.com/t3grp/bootstrap/pull/4) integrated the specification,
+workspace, agent, and deployment history into `main` at
+`f766865e8945ee684d5196ba560ed0791eb6ff7d`. Cloudflare D1 supersedes the earlier
+PostgreSQL/PGlite deployment design. R2 stores private file bytes; the container
+filesystem holds no durable application data.
+
+- [Final PR CI](https://github.com/t3grp/bootstrap/actions/runs/42203372717)
+  passed application/Cloudflare type checks, the actual Docker deployment dry run,
+  the standalone build, **90 tests**, and **all seven browser scenarios** with a
+  real local workerd D1 binding. Tests include atomic rollback, conflicting clients,
+  ambiguous transport outcomes, and a killed/restarted standalone agent worker.
+- [Merged-main CI](https://github.com/t3grp/bootstrap/actions/runs/42203801902)
+  passed on the same application tree.
+- [Production deployment](https://github.com/t3grp/bootstrap/actions/runs/42204035586)
+  applied the D1 migration and published the Worker and container on 6 November
+  2026. The live app is
+  [bootstrap.sherman-tansx.workers.dev](https://bootstrap.sherman-tansx.workers.dev).
+- Live verification confirmed HTTP 200 with `{"status":"ok"}` from `/api/health`,
+  the owner setup screen, the dedicated D1 binding, and the private R2 binding.
+  The database schema and initial revision are present in the production D1 database.
+- The owner account has not been claimed. Production authenticated file operations
+  and persistence across a production container restart are not claimed as verified;
+  these remain the first owner acceptance checks.
+- No live model is configured, and no paid model request was used for this work.
+
+See [Cloudflare deployment](cloudflare-deployment.md) for resource setup, private
+bindings, deployment commands, data limits, and the explicit legacy-data caveat.
+
 ## Remaining milestone work
 
 This is not a completed B1/B2 or hosted-service release. The next work includes:
 
-1. Validate a container deployment separately from the passing browser/PostgreSQL CI gate.
+1. Claim the deployed owner workspace, then verify an authenticated R2 upload/download
+   and persistence after a production container restart.
 2. Saved named table views, import, a page history/restore UI, and lazy resource loading.
 3. Expand the bounded agent path with granular grants, packaged skill versions,
    multi-turn chat, and a richer review/task workflow. These are not implied by this slice.
@@ -86,5 +117,6 @@ This is not a completed B1/B2 or hosted-service release. The next work includes:
 6. Managed instance provisioning, hosting subscriptions, and a separate AI-credit ledger.
 
 The Muse landing-page specification remains unchanged and separate from these
-authenticated application screens. No live infrastructure, external accounts,
-messages, purchases, or subscription charges are created by this build.
+authenticated application screens. The live deployment is a single owner's
+instance; connected-service actions, subscriber provisioning, subscriptions, and
+AI-credit billing remain later milestones.
