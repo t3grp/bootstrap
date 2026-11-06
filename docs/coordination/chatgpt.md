@@ -10,7 +10,8 @@ completed work when checks pass and there is no conflict.
   head `c5a6fa015bd88032cb20d455329a98eef222d3b6`; CI passed; integrated into main
   through PR #4, with PR #3 subsequently closed.
 - Current product task: **C01 — named table views, persistence and contract**.
-- State: **In progress; backend/API only**.
+- State: **Backend/API implementation complete; M01 contract handoff ready**.
+  Required final CI and merge state are recorded in the implementation PR.
 - Implementation branch: `feat/named-table-views`.
 - Exact base SHA: `af2bfc43716bf042590ca05e0d0edd9ef1a7b054`.
 - Work already owned elsewhere: D01 Cloudflare/deployment and M0 Muse Bot landing page.
@@ -56,11 +57,18 @@ claimed; the D1 binding, transport and lifecycle stay unchanged.
 
 ## Contract handoff to M01
 
-Before UI API wiring, publish the types, operation names, validation/size limits,
-revision/conflict behavior, selected-view routing/persistence decision, and error
-states in this record, with the contract commit SHA. Provide deterministic fixtures
-for loading, empty, ready, denied, stale revision and failure states. Reuse existing
-canonical table structures; do not ask Muse Bot to invent a separate data model.
+Read [named table views — contract v1](../table-views.md) before UI API wiring.
+It publishes the shared types and resolver, all five typed client operations,
+limits, typed filter/sort semantics, independent table/view revisions, uncertain
+response reconciliation, schema-attention states, routing decisions and deterministic
+loading/empty/ready/denied/conflict/failure fixtures. The canonical table model is
+unchanged. View filters are presentation settings, never resource grants.
+
+Use the optional `?view=V` full-page selection contract in M01; actual route handling
+and an inline block's future `viewId` need a serialized request to the integration
+writer. Neither is implemented in C01. Preserve canonical row edits, navigation
+flushing, locally acknowledged revisions and recoverable drafts. The shared resolver
+must not be used to replace the full table with a filtered subset during a save.
 
 Acceptance:
 
@@ -74,7 +82,20 @@ Acceptance:
 ## Requests and evidence
 
 - Muse Bot acknowledgment: pending in [muse-bot.md](muse-bot.md).
-- C01 contract commit: pending.
-- Implementation PR / focused checks / final CI: pending.
+- C01 contract commit: recorded in the following publication commit before the PR opens.
+- Implementation PR and final CI: [branch PR record](https://github.com/t3grp/bootstrap/pulls?q=head%3Afeat%2Fnamed-table-views).
+  The PR is the authoritative record for its exact head, required CI run, merge SHA
+  and any remaining failures; backend completion does not complete M01 or B1.
+- Local evidence: frozen-lockfile install, TypeScript and production web/worker
+  build passed. The 24 new domain/D1 checks passed in focused runs. Initial fixture
+  assertions were corrected to reflect owner-only memberships and redacted private
+  D1 errors; only those failures and the additional missing-cell regression were
+  rerun. Two new HTTP acceptance scenarios passed on their first attempts against
+  the production standalone build and real local D1. No live/paid AI request was made.
+- Required CI preserves all 90 existing tests and seven existing E2E scenarios,
+  adding 24 domain/D1 checks and two HTTP scenarios. Final results are in the PR.
+- Remaining C01 integration limitations: M01 controls/selection, named-view settings
+  in native export, and production migration/deployment. The deployment workflow is
+  manual; this handoff authorizes merge after green checks, not deployment.
 - Next queued work: C02 page-history API, then C03 import; later tasks follow the
   [board](README.md) and activate one bounded PR at a time.

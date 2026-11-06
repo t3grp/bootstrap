@@ -63,7 +63,7 @@ not complete B6.
 | Module | Current state | Remaining completion work |
 | --- | --- | --- |
 | B0 Foundation | Implemented and integrated; release/live-operation gates remain | Deployment acceptance, operational evidence and public release sequencing |
-| B1 Manual workspace | Useful core implemented; broader slice partial | Saved named table views, page history/restore interface, scalable loading; import belongs to the B8 portability gate |
+| B1 Manual workspace | Useful core implemented; named-view backend/contract added by C01; broader slice partial | M01 named-view controls and selection, view settings portability, page history/restore interface, scalable loading; import belongs to the B8 portability gate |
 | B2 One useful agent | Bounded assignment acceptance implemented; broader slice partial | Pinned executable skill versions, finer resource grants, richer contextual conversation, reviewed page/table proposals and memory workflows |
 | B3 Controlled connection | Not implemented | First Composio/Notion account binding, read/write capability, exact approval, action receipt, revocation and uncertain-write reconciliation |
 | B4 Agent communication | Not implemented | Durable deliveries, child assignments/results, revision-aware resumption, shared caps and cancellation |
@@ -87,7 +87,7 @@ needs the task's acceptance evidence; merged/deployed status is recorded separat
 
 | Pair | Area | ChatGPT owns | Muse Bot owns | Starting state / dependency |
 | --- | --- | --- | --- | --- |
-| C01 / M01 | B1 named table views | Persisted view model, scoped/versioned API and shared contract; domain tests | View picker, create/rename/delete controls, sort/filter/column configuration and interaction tests | C01 in progress on `feat/named-table-views`, base `af2bfc4`; published D1 handoff resolves its persistence dependency. M01 stays queued after M0; UI wiring waits for C01 contract |
+| C01 / M01 | B1 named table views | Persisted view model, scoped/versioned API and shared contract; domain tests | View picker, create/rename/delete controls, sort/filter/column configuration and interaction tests | C01 backend implemented on `feat/named-table-views`, base `af2bfc4`; [contract v1](../table-views.md) and [delivery record](chatgpt.md) ready. Final CI/merge evidence is in its PR. M01 stays queued after M0; Muse acknowledgment remains pending |
 | C02 / M02 | B1 page history | Scoped revision list/read/restore with optimistic conflict checks | History panel, revision preview, restore confirmation and recoverable conflict presentation | Queued after C01/M01; agree contract before wiring |
 | C03 / M03 | B8 workspace import | Bounded parser, validation, reference mapping, atomic import and secret exclusion | Import preview/mapping, error review and truthful progress/result UI | Queued; current export/import contract first |
 | C04 / M04 | B2 agent completion | Pinned skills, memory/source rules, finer grants, thread/proposal APIs and execution rules | Corresponding six-property, contextual chat and proposal-review interfaces | Queued; split into one capability per PR when activated |

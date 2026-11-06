@@ -8,6 +8,12 @@ import type {
   AssignmentInput,
   ProviderStatus,
   RunStatus,
+  TableViewCollection,
+  TableViewDetail,
+  CreateTableViewInput,
+  UpdateTableViewInput,
+  DeleteTableViewInput,
+  DeleteTableViewResult,
 } from "@bootstrap/core";
 
 export class ApiError extends Error {
@@ -60,6 +66,55 @@ export function uploadFile(workspaceId: string, file: File) {
     `/api/files?workspaceId=${encodeURIComponent(workspaceId)}`,
     { method: "POST", body: data },
   );
+}
+
+export function getTableViews(workspaceId: string, tableId: string) {
+  return request<TableViewCollection>(
+    `/api/table-views?workspaceId=${encodeURIComponent(workspaceId)}&tableId=${encodeURIComponent(tableId)}`,
+  );
+}
+
+function tableViewPath(workspaceId: string, id?: string) {
+  return `/api/table-views${id === undefined ? "" : `/${encodeURIComponent(id)}`}?workspaceId=${encodeURIComponent(workspaceId)}`;
+}
+
+export function getTableView(workspaceId: string, id: string) {
+  return request<TableViewDetail>(tableViewPath(workspaceId, id));
+}
+
+export function createTableView(
+  workspaceId: string,
+  input: CreateTableViewInput,
+) {
+  return request<TableViewDetail>(tableViewPath(workspaceId), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateTableView(
+  workspaceId: string,
+  id: string,
+  input: UpdateTableViewInput,
+) {
+  return request<TableViewDetail>(tableViewPath(workspaceId, id), {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteTableView(
+  workspaceId: string,
+  id: string,
+  input: DeleteTableViewInput,
+) {
+  return request<DeleteTableViewResult>(tableViewPath(workspaceId, id), {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
 }
 
 export function getSetupStatus() {
